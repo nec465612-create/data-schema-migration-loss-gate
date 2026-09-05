@@ -270,7 +270,7 @@ export async function writeAndVerify(
       if (encoded !== "null") {
         const parsed = JSON.parse(encoded) as Record<string, any>;
         if (
-          parsed.revision === Number(revision) || String(parsed.revision) === revision
+          parsed.revision === revision
         ) {
           const operation = parsed.last_operation as Record<string, unknown> | undefined;
           if (

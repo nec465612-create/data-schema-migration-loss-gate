@@ -81,8 +81,12 @@ def test_create_two_party_case_and_exact_historical_readback(
     assert int(case_id) == 1
     assert int(contract.get_count()) == 1
     assert int(contract.get_id_by_nonce(direct_alice, "a" * 32)) == 1
-    assert json.loads(contract.get_case(case_id))["phase"] == "BASE_DRAFT"
-    assert json.loads(contract.get_version(case_id, 1))["revision"] == 1
+    case = json.loads(contract.get_case(case_id))
+    assert case["phase"] == "BASE_DRAFT"
+    assert case["id"] == "1"
+    assert case["revision"] == "1"
+    assert case["parent"] == "0"
+    assert json.loads(contract.get_version(case_id, 1))["revision"] == "1"
     assert json.loads(contract.list_cases(1, 4)) == {"ids": ["1"], "next": "0"}
     assert json.loads(contract.list_actor(direct_alice, 0, 4)) == {
         "ids": ["1"],

@@ -322,7 +322,7 @@ function App() {
           preHash: "null",
           creator: account ?? "",
           nonce,
-          verify: (record) => record.phase === "BASE_DRAFT" && record.revision === 1,
+          verify: (record) => record.phase === "BASE_DRAFT" && record.revision === "1",
         })} disabled={busy || !journalReady || !account || !config.contractAddress}>Create case</button>
       </section>
 

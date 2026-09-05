@@ -350,7 +350,7 @@ def _operation(record, method: str, caller: str, args_hash: str):
 
 
 def _commit_case(self, record, revision: int):
-    record["revision"] = revision
+    record["revision"] = str(revision)
     encoded = _canonical(record)
     if len(encoded.encode("utf-8")) > MAX_RECORD_BYTES:
         _fail("CAPACITY")
@@ -494,12 +494,12 @@ class DataSchemaMigrationLossGate(gl.Contract):
         new_id = int(self.case_count) + 1
         record = {
             "v": 1,
-            "id": new_id,
+            "id": str(new_id),
             "primary": primary,
             "secondary": mapper_text,
             "phase": "BASE_DRAFT",
-            "revision": 1,
-            "parent": parent_id,
+            "revision": "1",
+            "parent": str(parent_id),
             "create_hash": args_hash,
             "base": _canonical(base),
             "response": "{}",
