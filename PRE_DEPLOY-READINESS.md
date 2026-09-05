@@ -2,7 +2,7 @@
 
 `DOCUMENT_STATUS: PRE_DEPLOY_READINESS_NOT_APPROVED`
 
-This package is a local exact-revision candidate for anonymous PRE_DEPLOY review. It is not PRE_DEPLOY approval, deployment approval, live evidence, or release approval. The current reviewer route, later live Studio evidence, and Claude presentation relay remain open gates.
+This package is `DSM-LG-PREDEPLOY-9B70AB6`, a local exact-revision candidate for anonymous PRE_DEPLOY review. It is not PRE_DEPLOY approval, deployment approval, live evidence, or release approval. The current reviewer route and later live Studio evidence remain open gates; the required Claude presentation result is received and recorded below.
 
 ## Scope and classification
 
@@ -12,7 +12,7 @@ This package is a local exact-revision candidate for anonymous PRE_DEPLOY review
 - Classification: `INTENTIONALLY FROZEN`
 - Upgrade method/storage: none
 - Deployment target: Studionet only, after PRE_DEPLOY approval
-- Source Git revision: `ab4be75dd07e2f743174f786cce39765418424a9` (`Bound transaction polling and cancellation`)
+- Source Git revision: `9b70ab6f0cdc9e9acd0b2db65e944bf97fcdd0bf` (`Complete frontend presentation corrections`)
 - Contract address: not deployed
 
 ## Classification decision record
@@ -57,7 +57,7 @@ STAGE-2.md SHA-256:                  A44237E81EB8C9336F3AC74444BFE7972D2DF165377
 | Contract schema | `genvm-lint schema contracts/main.py --output contract-schema.json` | PASS |
 | Contract typecheck | `genvm-lint typecheck contracts/main.py` | PASS |
 | Direct runtime | `gltest -q tests` | PASS; 8 tests |
-| Frontend unit | `npm run test` in `frontend` | PASS; 21 tests |
+| Frontend unit | `npm run test` in `frontend` | PASS; 9 files / 21 tests |
 | Frontend build | `npm run build` in `frontend` | PASS; Vite build; non-blocking chunk-size warning |
 | Browser smoke | `npm run playwright` in `frontend` | PASS; 3 tests |
 | Unsafe HTML scan | `rg -n "dangerouslySetInnerHTML|innerHTML|innerText|eval\\(" frontend/src frontend/tests` | No matches |
@@ -75,14 +75,15 @@ contract-schema.json                      16A15785BD1ACA7DA89A0C73ADE7CBC22539AB
 tests/test_contract.py                    95F2ED51FABB7963D239CA1A9AB5A5412B2EAAF0C031ED6FBB42C13B1D5F8E6C
 probes/schema_probe.py                   56E77FB226EE223100AFDA26E6CC8797A048EBB5E90157AB8F6114F53122A8B9
 probes/schema_probe.json                 E8D8C7F03BE1AD732393A792DED323DC56AD391E689D6CF908E2068E50C4CFF3
-frontend/src/App.tsx                     0898B288CBEE6C5EFBA1C7D8C5FCA8FCD2D24B9984801568C7E253563D778F24
+frontend/src/App.tsx                     F34DC3508309B8D0A07A7ED8C43445E9D4E226BE3B68E06778617A840F42AC41
 frontend/src/mapping.ts                  7C83AF8E6EB7DC756A1B80160687A6CE0A4FC69F47912823FCAF21F2326D3AD1
 frontend/src/contract.ts                 8F88D62FC09C88688F90B41FB1A944E9092634782B631CD225ACBBC4200A2CDF
 frontend/src/network.ts                  B263BF17FF928A352555ED8D1E9C5E4C9CABA438D34D4F6474724D33DA9D7BBD
 frontend/src/write-context.ts            3A306279F673248DBEBE599E57C6CA3F7D068D74E6D41462B6742D3BCFFF35C
 frontend/src/pending.ts                  0BB96B1D80FF83CFF4829C8F908C1B19284D385752E61282A99046BA304D93CD
 frontend/src/progress.ts                 8ECDCFFD89D977629FBBA4DBCE677A628B473F8AF5AA5692D129A0CBA1E7071F
-frontend/src/styles.css                  348462E5466BC8028CAAC1A209A41AC959BB88E17A2A4D77C3B36F29BDB3C51F
+frontend/src/styles.css                  376622CB0BC6A33BA402B4E6920EBABC683F9C3295E43E0BDD1BC7819F88C126
+docs/RPC-BUDGET.md                        40DE0F6D168986E9F1F223227F1BD22B871078B843EF66BD4C551B3DABAF6CCB
 frontend/tests/pending.test.ts            EF391F94A137D96BB35F0BD28C141673E45E1F521CFB30FB68C6E3308351CE8D
 frontend/tests/journal-recovery.test.ts   2E8454D0B980DC5D68F28D38C66345181E35354CBEFD4B636CF4843EBB388404
 frontend/tests/progress.test.ts           7663FD75183D7D26D9ECE677141C97A64CB46F041B6C627888E5D21C9B891053
@@ -131,7 +132,7 @@ docs/STUDIO-E2E-PLAN.md
 
 ## Required review/deployment boundary
 
-No deployment, signature, contract write, GitHub publication, Vercel publication, or live Studio claim is authorized by this document. The selected Studio account, pre-E2E measurement mode, and numeric Studio matrix are recorded, but the matrix-before-opening sequencing breach requires reviewer-confirmed disposition; PRE_DEPLOY approval, deployment, and live evidence remain open. The next gate is one current anonymous PRE_DEPLOY review bound to the final exact source revision and this package. The old reviewer route in the pasted handoff is for a different project and must not be used.
+No deployment, signature, contract write, GitHub publication, Vercel publication, or live Studio claim is authorized by this document. The selected Studio account, pre-E2E measurement mode, and numeric Studio matrix are recorded, but the matrix-before-opening sequencing breach requires reviewer-confirmed disposition; PRE_DEPLOY approval, deployment, and live evidence remain open. The next gate is one current anonymous PRE_DEPLOY review bound to the final exact source revision and this package, using the retained reviewer route below.
 
 ## Later Studio E2E plan
 
@@ -140,5 +141,5 @@ After exact PRE_DEPLOY approval, the primary AI will execute the rows in `docs/S
 ## Open handoffs
 
 - Current anonymous Build reviewer route: `codex://threads/01a0725b-91de-7602-85fe-7bc72d414ad9`.
-- Claude presentation phase: `MANUAL HANDOFF PROMPT REVISED — ITERATION 1/2 — NO CLAUDE RESULT RELAYED`; see `DESIGN.md` and `CLAUDE-FRONTEND-REDESIGN-PROMPT.txt`.
+- Claude presentation phase: `MANUAL HANDOFF RESULT RECEIVED — ITERATION 2/2 — CODEX TAKEOVER COMPLETE`; see `DESIGN.md`, `CLAUDE-FRONTEND-REDESIGN-PROMPT.txt`, and the user-transferred Iteration 2/2 report in this conversation.
 - Studio account: `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`, intended role `deployer`; `OBSERVABLE_ACTION_LEDGER` capability mode locked; not deployed.
