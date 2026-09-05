@@ -223,6 +223,10 @@ function providerAllowed(name: unknown, rdns: unknown): boolean {
   return typeof name === "string" && name.length > 0 && walletForRdns(rdns) !== null;
 }
 
+function isEip1193Provider(value: unknown): value is Eip1193Provider {
+  return typeof value === "object" && value !== null && typeof (value as { request?: unknown }).request === "function";
+}
+
 function legacyWalletForProvider(provider: LegacyWalletProvider): SupportedWallet | null {
   const matches = legacyWallets.filter((wallet) => wallet.flags.some((flag) => provider[flag] === true));
   return matches.length === 1 ? matches[0] : null;
@@ -243,8 +247,16 @@ function announceProvider(event: Event): void {
   const detail = (event as CustomEvent<{ info?: { uuid?: string; name?: string; rdns?: string; icon?: string }; provider?: Eip1193Provider }>).detail;
   const info = detail?.info;
   const identity = walletForRdns(info?.rdns);
-  if (!detail?.provider || !info?.name || !providerAllowed(info.name, info.rdns) || !identity) return;
+  if (!isEip1193Provider(detail?.provider) || !info?.name || !providerAllowed(info.name, info.rdns) || !identity) return;
+  const existingProvider = Array.from(discoveredWallets.entries()).find(([, wallet]) => wallet.provider === detail.provider);
+  if (existingProvider) {
+    if (existingProvider[1].rdns !== identity.rdns) return;
+    discoveredWallets.set(existingProvider[0], { ...existingProvider[1], icon: info.icon });
+    return;
+  }
   const id = info.uuid ?? identity.rdns;
+  const existingId = discoveredWallets.get(id);
+  if (existingId && existingId.provider !== detail.provider) return;
   discoveredWallets.set(id, {
     id,
     name: identity.name,
@@ -263,7 +275,7 @@ export async function discoverWallets(): Promise<WalletOption[]> {
     if (id.startsWith("legacy-")) discoveredWallets.delete(id);
   }
   const legacy = (window as Window & { ethereum?: LegacyWalletProvider }).ethereum;
-  const legacyIdentity = legacy ? legacyWalletForProvider(legacy) : null;
+  const legacyIdentity = legacy && isEip1193Provider(legacy) ? legacyWalletForProvider(legacy) : null;
   if (legacy && legacyIdentity && !Array.from(discoveredWallets.values()).some((wallet) => wallet.rdns === legacyIdentity.rdns)) {
     discoveredWallets.set(`legacy-${legacyIdentity.rdns}`, { id: `legacy-${legacyIdentity.rdns}`, ...legacyIdentity, provider: legacy });
   }
