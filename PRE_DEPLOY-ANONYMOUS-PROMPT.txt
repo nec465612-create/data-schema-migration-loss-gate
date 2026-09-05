@@ -1,0 +1,191 @@
+NOT SENT — MANUAL RELAY REQUIRED
+
+REVIEWER: anonymous co-review AI
+WORKFLOW: BUILD
+TASK ID: 01a07220-aca3-7ba0-8d19-ec427bc02912
+PROJECT: Data Schema Migration Loss Gate
+PROJECT PATH: E:\Genlayer-Projects\data-schema-migration-loss-gate
+CATEGORY: PROJECT
+CHECKPOINT: PRE_DEPLOY
+SOURCE REVISION: 1469f8f89ca2646aac7a1bff9d85a09a7ba80cf4
+PACKAGE: DSM-LG-PREDEPLOY-1469F8F
+STATUS: exact package prepared; not sent because no valid current reviewer route is available
+
+## Objective
+
+Independently review this exact Build package for `PRE_DEPLOY`. Verify source and approved Stage 1/2 baseline consistency, current schema/runtime compatibility, storage/ABI safety, nondeterministic isolation and substantive validator rederivation, production-shaped serialization, contract classification, journal/wallet/transaction safety, public UI truthfulness, RPC budgets, recovery behavior, and exact evidence binding.
+
+Approve only if every current PRE_DEPLOY requirement passes for this exact source revision and package. A PRE_DEPLOY approval would authorize only the reviewed readiness and later bundled Studio plan. It is not deployment proof, live evidence, GitHub/Vercel approval, Explorer submission approval, or release approval.
+
+Review read-only. Do not code, edit, sign, transact, deploy, push, publish, or create another reviewer task. Do not use the separate `contract-spec-abi-conformance-gate` project or its reviewer route.
+
+## Exact baseline and package identity
+
+The approved research handoff is Candidate C3, category `PROJECT`. The research approval is Stage 1/2 handoff only; it does not authorize implementation deployment, contract writes, or release.
+
+```text
+Canonical research package SHA-256: 3464E830908CB1D87504057567242D36BDCD0C4FD59934B7D22F6482C6799ED2
+STAGE-1.md SHA-256:                  AC7AF33D7EEE958472FD9E2DCB88DA12C46C786C9E98691231D5FDB936E28B9D
+STAGE-2.md SHA-256:                  A44237E81EB8C9336F3AC74444BFE7972D2DF165377DEF9A08383559DFAA02FF
+SOURCE GIT COMMIT:                  1469f8f89ca2646aac7a1bff9d85a09a7ba80cf4
+```
+
+The local project initially contained only `RESEARCH-HANDOFF.md`, `STAGE-1.md`, and `STAGE-2.md`; this Build independently created the implementation and local Git repository. No source, address, approval, credential, deployment, or evidence is inherited from another Task.
+
+## Stage 2 requirements to bind
+
+The contract is one common schema-migration case. The primary schema owner fixes old/new schemas; the mapper supplies an explicit mapping; evaluators judge field-meaning equivalence. The result is `LOSSLESS`, `LOSS_FOUND`, or safe global `UNRESOLVED`. No actual user data claim is made.
+
+Required storage:
+
+```text
+case_count:u256
+cases:TreeMap[u256,str]
+nonce_index:TreeMap[str,u256]
+actor_index:TreeMap[str,str]
+child_index:TreeMap[u256,str]
+version_index:TreeMap[u256,u256]
+history:TreeMap[str,str]
+```
+
+Required writes:
+
+```text
+create_schema_case(nonce:str, mapper:Address, base_json:str, parent:u256) -> u256
+replace_schemas(id:u256, base_json:str, expected_revision:u256) -> None
+lock_schemas(id:u256, expected_revision:u256) -> None
+put_mapping(id:u256, response_json:str, expected_revision:u256) -> None
+freeze_mapping(id:u256, expected_revision:u256) -> None
+evaluate_migration(id:u256, expected_revision:u256) -> None
+retry_migration(id:u256, expected_revision:u256) -> None
+```
+
+Required views are `get_case`, `get_version`, `get_id_by_nonce`, `get_count`, `list_cases`, `list_actor`, and `list_children`.
+
+Lifecycle: create `BASE_DRAFT`; lock `BASE_LOCKED`; put `RESPONSE_DRAFT`; freeze `FROZEN`; evaluate to `DONE`/`LOSSLESS`, `DONE`/`LOSS_FOUND`, or `UNRESOLVED`; retry uses a 60-second transaction-time cooldown and maximum three attempts, with the third unresolved result becoming `EXHAUSTED`.
+
+The deterministic reducer must enforce exact old/new field structure, one response row per old field, unique targets, safe DROP/default rules, type/cardinality rules, and global UNKNOWN handling. `DROP` is `SKIP_DROP`; structurally incompatible non-DROP rows are `DIFFERENT`; only compatible rows reach the bounded semantic assessment. The custom LLM call must be inside `gl.vm.run_nondet_unsafe`, delimit all supplied JSON as untrusted data, ignore embedded instructions, return bounded primitive JSON, and have a validator independently re-run and compare the stable result vector.
+
+## Exact implementation artifacts and hashes
+
+```text
+contracts/main.py                         BA1889985FC4A740AD3B7004A59D5688D86F0BC4FC9D78BD377A273A541BDFC8
+contract-schema.json                      16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF
+tests/test_contract.py                    862BEA327BB074A7C7DB5A9997DF5C9609524E03BD7817F54DCB65B008FA43CD
+probes/schema_probe.py                   56E77FB226EE223100AFDA26E6CC8797A048EBB5E90157AB8F6114F53122A8B9
+probes/schema_probe.json                 E8D8C7F03BE1AD732393A792DED323DC56AD391E689D6CF908E2068E50C4CFF3
+frontend/src/App.tsx                     E32EEBDED4C9386C659EECB9721D7DB4884E3982EE8674FC08BB831D3163681B
+frontend/src/contract.ts                 3EDD51538B822CF1921823E5E5F66F4EDAA4C18466817E54B2A7B4B2C33CD303
+frontend/src/pending.ts                  1BC647E5932AF1535DBD7CF4DA8ED09A0E6234258378BAB0260B4C3861C8C5C7
+frontend/src/progress.ts                 8ECDCFFD89D977629FBBA4DBCE677A628B473F8AF5AA5692D129A0CBA1E7071F
+frontend/src/styles.css                  3C03036CDBF0522BE53700526951DFF4D571CAEA8DD777E5C2B0E4214DB19B80
+frontend/tests/pending.test.ts            7540099B4C6F67AAD87A0D2D90AD8532F55D0CE12C7ED72363B9679A13F6E63A
+frontend/tests/progress.test.ts           7663FD75183D7D26D9ECE677141C97A64CB46F041B6C627888E5D21C9B891053
+frontend/tests/flow.spec.ts               9D8267A9FE7A377E42BB899B919FBD71A7A46CB1886909C0329C1B8F3E21ED8B
+frontend/package.json                     3DDE31E000B6EFF38FBF21FF743649748AB7FFC9F08364DE7E13FFC129AAD5B8
+frontend/package-lock.json                D6741048BC001F908629E158934AAA92EF154BA544CF694969F5368F7425925C
+gltest.config.yaml                        6B01A7D4C94FB2D049087C2F95D8F2914719697ABB45A7D9B59494B879E70157
+```
+
+Read the exact source and the following package documents from the target path:
+
+```text
+RESEARCH-HANDOFF.md
+STAGE-1.md
+STAGE-2.md
+IMPLEMENTATION-ADAPTATION.md
+PRE_DEPLOY-READINESS.md
+docs/RPC-BUDGET.md
+docs/STUDIO-E2E-PLAN.md
+FRONTEND-DESIGN-RATIONALE.md
+CLAUDE-FRONTEND-REDESIGN-PROMPT.txt
+```
+
+## Material implementation adaptations
+
+1. The installed Direct Mode runner presents fixture addresses as 20-byte values in local tests. The contract converts either bytes or production-shaped strings to lowercase `0x`-hex before storage, actor checks, indexes, and hashes. This is a local runtime representation adaptation, not a public ABI change.
+2. The reducer fixes structural consequences deterministically and sends only compatible rows to the semantic path. This prevents model output from converting a known structural loss into success.
+3. The installed browser package is `genlayer-js` 1.1.8. `VITE_CONTRACT_ADDRESS` is fail-closed until an exact deployment address exists.
+4. The Stage 2 journal remains exactly 13 bounded keys. `glj1:` keys use a random 16-byte reservation; `operationFingerprint` is compared separately and is never used as a storage key. Writes are serialized by Web Locks, orphan records rebuild the index, active duplicate case operations are blocked, and a nonempty transaction hash is immutable.
+5. The frontend exposes the exact public write lifecycle: `IDLE`, `WAITING_FOR_WALLET`, `SUBMITTED`, `WAITING_FOR_FINALITY`, `VERIFYING_EXECUTION`, `VERIFYING_READBACK`, `SUCCESS`, `REJECTED`, `FAILED`, and `RECONCILIATION_REQUIRED`. It retains the hash, requires finalized successful execution and exact `get_version` readback before `SUCCESS`, shows a pending-only spinner with reduced-motion handling, and never automatically resubmits an uncertain operation.
+
+## Local evidence actually executed
+
+```text
+$env:PYTHONIOENCODING='utf-8'; genvm-lint check contracts/main.py --json
+PASS; DataSchemaMigrationLossGate; 14 methods, 7 view methods, 7 write methods
+(informational I200: newer runner available; pinned current runner is compatible)
+
+genvm-lint schema contracts/main.py --output contract-schema.json
+PASS; schema written
+
+genvm-lint typecheck contracts/main.py
+PASS; no type errors
+
+gltest -q tests
+PASS; 7 tests
+
+npm --prefix frontend run test
+PASS; 2 test files, 4 tests
+
+npm --prefix frontend run build
+PASS; Vite build; non-blocking chunk-size warning for the main bundle
+
+npm --prefix frontend run playwright
+PASS; 2 browser smoke tests
+
+rg -n "dangerouslySetInnerHTML|innerHTML|innerText|eval\\(" frontend/src frontend/tests
+PASS; no matches
+
+rg -n "glj1:.*operationFingerprint|operationFingerprint.*glj1:|key.*operationFingerprint" frontend/src frontend/tests
+PASS; no matches
+```
+
+The local tests cover contract lifecycle, authorization/CAS/no-write behavior, deterministic structural LOSS_FOUND, semantic SAME/UNKNOWN/cooldown/exhaustion, schema probe, journal recovery and immutability, transaction-progress vocabulary, no startup RPC, public warning, and disabled signing before journal readiness. Local PASS is not Studio/account/reviewer/live-E2E evidence.
+
+## Classification and live boundary
+
+Classification is `INTENTIONALLY FROZEN`; Stage 2 advertises no upgrade mechanism and the source exposes no upgrade storage or method. A post-deployment defect would require a new contract deployment and frontend/address update. This package contains no contract address, signature, deployment transaction, receipt, Explorer/RPC result, GitHub target, Vercel target, or public release URL.
+
+Studio account: `NOT_LOCKED`.
+Current anonymous Build reviewer route: `NOT IDENTIFIED — MANUAL RELAY REQUIRED`.
+Claude presentation phase: `PROMPT READY — NO CLAUDE RESULT RELAYED`; the bounded prompt permits only `frontend/src/App.tsx`, `frontend/src/styles.css`, and optional local assets. It does not replace primary integration review or authorize a gate.
+
+The independent RPC package is `docs/RPC-BUDGET.md`. Its frontend budget is local-only at this checkpoint: landing 0, explicit list/detail reads 1 each, wallet chain read 1, and each write at most 1 submission plus 3 bounded receipt queries plus 2 bounded readbacks. Studio budget is planned but not live-measured. The full planned Studionet sequence is `docs/STUDIO-E2E-PLAN.md`.
+
+## Official references checked for this package
+
+- https://docs.genlayer.com/developers/intelligent-contracts/storage
+- https://docs.genlayer.com/developers/intelligent-contracts/features/transaction-context
+- https://docs.genlayer.com/developers/intelligent-contracts/equivalence-principle
+- https://docs.genlayer.com/developers/intelligent-contracts/features/calling-llms
+- https://docs.genlayer.com/api-references/genlayer-linter
+- https://docs.genlayer.com/developers/decentralized-applications/genlayer-js
+- https://docs.genlayer.com/developers/decentralized-applications/writing-data
+- https://docs.genlayer.com/developers/decentralized-applications/querying-a-transaction
+- https://docs.genlayer.com/api-references/genlayer-node/gen/gen_getTransactionStatus
+
+## Required review method and verdict
+
+Independently inspect the exact source revision, hashes, Stage 1/2 package, contract schema, tests, adaptation record, readiness record, both RPC matrices, frontend lifecycle, and open handoffs. Missing locked Studio identity, missing current reviewer route, missing live evidence, or an unrelayed mandatory presentation result must be reported as missing evidence/changes; do not infer approval.
+
+Apply the current canonical governance gates, including schema/runtime compatibility, recoverability/classification, submission integrity, dual RPC budgets, exact-revision evidence, and the operational rule that local PASS is not live PASS. Return exactly one allowed literal verdict and the following schema. Do not return `INCONCLUSIVE`, a partial approval, vague approval, delegation, or a request for the user to assemble separate attachments.
+
+```text
+REVIEWER: anonymous co-review AI
+CHECKPOINT: PRE_DEPLOY
+REVISION/PACKAGE: source 1469f8f89ca2646aac7a1bff9d85a09a7ba80cf4; package DSM-LG-PREDEPLOY-1469F8F
+VERDICT: ANONYMOUS REVIEW APPROVED - PRE_DEPLOY
+FINDINGS: NONE, or for each finding provide ID, severity, violated requirement, exact file/line/URL/artifact, evidence, cause or contradiction, impact, concrete correction, and verification criterion.
+REBUTTALS: none, or each finding ID with accepted/revised/retained decision and exact evidence.
+VERIFIED EVIDENCE: exact artifacts, hashes, commands, outputs, and links actually checked.
+MISSING OR UNVERIFIABLE EVIDENCE: exact missing item and verification criterion, or NONE.
+```
+
+Replace the verdict line with exactly one of:
+
+```text
+ANONYMOUS REVIEW APPROVED - PRE_DEPLOY
+ANONYMOUS REVIEW CHANGES REQUIRED - PRE_DEPLOY
+ANONYMOUS REVIEW REJECTED - PRE_DEPLOY
+```

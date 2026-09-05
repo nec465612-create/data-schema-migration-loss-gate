@@ -12,7 +12,7 @@ This package is a local exact-revision candidate for anonymous PRE_DEPLOY review
 - Classification: `INTENTIONALLY FROZEN`
 - Upgrade method/storage: none
 - Deployment target: Studionet only, after PRE_DEPLOY approval
-- Source Git revision: recorded after the implementation package commit below
+- Source Git revision: `1469f8f89ca2646aac7a1bff9d85a09a7ba80cf4` (`Complete schema migration gate package`)
 - Contract address: not deployed
 
 ## Exact upstream package
@@ -31,13 +31,34 @@ STAGE-2.md SHA-256:                  A44237E81EB8C9336F3AC74444BFE7972D2DF165377
 | Contract schema | `genvm-lint schema contracts/main.py --output contract-schema.json` | PASS |
 | Contract typecheck | `genvm-lint typecheck contracts/main.py` | PASS |
 | Direct runtime | `gltest -q tests` | PASS; 7 tests |
-| Frontend unit | `npm run test` in `frontend` | PASS; 2 tests |
+| Frontend unit | `npm run test` in `frontend` | PASS; 4 tests |
 | Frontend build | `npm run build` in `frontend` | PASS; Vite build; non-blocking chunk-size warning |
 | Browser smoke | `npm run playwright` in `frontend` | PASS; 2 tests |
 | Unsafe HTML scan | `rg -n "dangerouslySetInnerHTML|innerHTML|innerText|eval\\(" frontend/src frontend/tests` | No matches |
 | Journal key scan | `rg -n "glj1:.*operationFingerprint|operationFingerprint.*glj1:|key.*operationFingerprint" frontend/src frontend/tests` | No matches |
 
 The frontend unit result includes journal integrity and all required transaction-progress phase vocabulary checks. The browser smoke suite confirms no startup RPC request and disabled signing until journal initialization is healthy.
+
+## Exact source manifest at the source revision
+
+```text
+contracts/main.py                         BA1889985FC4A740AD3B7004A59D5688D86F0BC4FC9D78BD377A273A541BDFC8
+contract-schema.json                      16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF
+tests/test_contract.py                    862BEA327BB074A7C7DB5A9997DF5C9609524E03BD7817F54DCB65B008FA43CD
+probes/schema_probe.py                   56E77FB226EE223100AFDA26E6CC8797A048EBB5E90157AB8F6114F53122A8B9
+probes/schema_probe.json                 E8D8C7F03BE1AD732393A792DED323DC56AD391E689D6CF908E2068E50C4CFF3
+frontend/src/App.tsx                     E32EEBDED4C9386C659EECB9721D7DB4884E3982EE8674FC08BB831D3163681B
+frontend/src/contract.ts                 3EDD51538B822CF1921823E5E5F66F4EDAA4C18466817E54B2A7B4B2C33CD303
+frontend/src/pending.ts                  1BC647E5932AF1535DBD7CF4DA8ED09A0E6234258378BAB0260B4C3861C8C5C7
+frontend/src/progress.ts                 8ECDCFFD89D977629FBBA4DBCE677A628B473F8AF5AA5692D129A0CBA1E7071F
+frontend/src/styles.css                  3C03036CDBF0522BE53700526951DFF4D571CAEA8DD777E5C2B0E4214DB19B80
+frontend/tests/pending.test.ts            7540099B4C6F67AAD87A0D2D90AD8532F55D0CE12C7ED72363B9679A13F6E63A
+frontend/tests/progress.test.ts           7663FD75183D7D26D9ECE677141C97A64CB46F041B6C627888E5D21C9B891053
+frontend/tests/flow.spec.ts               9D8267A9FE7A377E42BB899B919FBD71A7A46CB1886909C0329C1B8F3E21ED8B
+frontend/package.json                     3DDE31E000B6EFF38FBF21FF743649748AB7FFC9F08364DE7E13FFC129AAD5B8
+frontend/package-lock.json                D6741048BC001F908629E158934AAA92EF154BA544CF694969F5368F7425925C
+gltest.config.yaml                        6B01A7D4C94FB2D049087C2F95D8F2914719697ABB45A7D9B59494B879E70157
+```
 
 ## Source inventory
 
