@@ -37,6 +37,10 @@ Stage 2 requires CRLF input to normalize to LF before validation and freezing. `
 
 The mapping editor now initializes one row for every old field, supports adding any remaining old-field row up to the Stage 2 cap, exposes old-field selection, and disables a new-field target already selected by another non-DROP row. A pure regression suite covers multi-field initialization and duplicate-target availability. This is a frontend-only correction at source commit `c26b1c5b0eff3fd2652b87bb1924696a5e805b47`; the contract ABI, storage, and transaction envelope are unchanged.
 
+### F-004 wrong-chain fail-closed guard
+
+The frontend now treats an absent or mismatched chain as invalid, disables Create case until the configured chain is confirmed, and applies the same guard centrally in `writeAndVerify` before journal reservation or wallet signing. Connect and successful network switching update the bound chain; unavailable switch readback fails closed. `frontend/tests/network.test.ts` covers matching, case variation, mismatch, and missing chain IDs. This is a frontend-only correction at source commit `0f4ecfdafddac361f70d5630417704a451c6da9b`; the contract ABI, storage, and transaction envelope are unchanged.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.
