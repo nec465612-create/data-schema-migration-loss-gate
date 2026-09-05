@@ -25,6 +25,10 @@ The C3 table reducer deterministically fixes `DROP` as `SKIP_DROP` and all struc
 
 The installed current SDK package is `genlayer-js` (not a separate `@genlayer-js/sdk` package). The frontend uses the SDK's read client, wallet-provider client, transaction status and execution-result APIs. No contract address is bundled; `VITE_CONTRACT_ADDRESS` is fail-closed until an exact deployment is available.
 
+### Canonical case-record serialization
+
+Stage 2 requires every persisted case `id`, `revision`, and `parent` to be canonical decimal strings in JSON transport. The implementation keeps numeric values only for typed storage keys, counters, and ABI arguments; record/history JSON now writes and verifies those three fields as strings. This is a corrective delta for PRE_DEPLOY finding F-001, with exact string assertions in `tests/test_contract.py` and strict frontend readback matching.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.

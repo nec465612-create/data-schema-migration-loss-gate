@@ -12,7 +12,7 @@ This package is a local exact-revision candidate for anonymous PRE_DEPLOY review
 - Classification: `INTENTIONALLY FROZEN`
 - Upgrade method/storage: none
 - Deployment target: Studionet only, after PRE_DEPLOY approval
-- Source Git revision: `1469f8f89ca2646aac7a1bff9d85a09a7ba80cf4` (`Complete schema migration gate package`)
+- Source Git revision: `f6f428c15e448aeaf114a4676f05fb8da1a33aa6` (`Fix canonical case record serialization`)
 - Contract address: not deployed
 
 ## Exact upstream package
@@ -42,13 +42,13 @@ The frontend unit result includes journal integrity and all required transaction
 ## Exact source manifest at the source revision
 
 ```text
-contracts/main.py                         BA1889985FC4A740AD3B7004A59D5688D86F0BC4FC9D78BD377A273A541BDFC8
+contracts/main.py                         6ABA47E264C77CE4BF22186377CFDD7484B926E134FFA06F152416BD54EB25E8
 contract-schema.json                      16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF
-tests/test_contract.py                    862BEA327BB074A7C7DB5A9997DF5C9609524E03BD7817F54DCB65B008FA43CD
+tests/test_contract.py                    2625714C38E80B3484B083FFB5C7AFA6888A56FB0FD0AC536E63C461BA560682
 probes/schema_probe.py                   56E77FB226EE223100AFDA26E6CC8797A048EBB5E90157AB8F6114F53122A8B9
 probes/schema_probe.json                 E8D8C7F03BE1AD732393A792DED323DC56AD391E689D6CF908E2068E50C4CFF3
-frontend/src/App.tsx                     E32EEBDED4C9386C659EECB9721D7DB4884E3982EE8674FC08BB831D3163681B
-frontend/src/contract.ts                 3EDD51538B822CF1921823E5E5F66F4EDAA4C18466817E54B2A7B4B2C33CD303
+frontend/src/App.tsx                     E6C924C5DAFDB432E52327ECAB09A434FCFE0DC54199F3E3E0CF4F928509BF4E
+frontend/src/contract.ts                 67871674FAFB01B81C718B82ED22C0EA392326A5AAFBF3EEEC987E75B42B97C2
 frontend/src/pending.ts                  1BC647E5932AF1535DBD7CF4DA8ED09A0E6234258378BAB0260B4C3861C8C5C7
 frontend/src/progress.ts                 8ECDCFFD89D977629FBBA4DBCE677A628B473F8AF5AA5692D129A0CBA1E7071F
 frontend/src/styles.css                  3C03036CDBF0522BE53700526951DFF4D571CAEA8DD777E5C2B0E4214DB19B80
