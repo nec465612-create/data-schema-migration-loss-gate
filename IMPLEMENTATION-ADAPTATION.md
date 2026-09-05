@@ -65,6 +65,10 @@ The frontend transaction coordinator now uses a visibility-aware, abortable wait
 
 The package records C3 as `INTENTIONALLY FROZEN` because the approved Stage 2 public surface advertises no upgrade method or upgrade storage. On 2026-09-06 the user instructed the primary AI, “Làm đi, bạn có quyền tự quyết”, explicitly authorizing the primary AI to finalize this project decision; the primary AI records and accepts the frozen classification under that authorization. The package now discloses that a post-deployment defect requires a replacement deployment and new frontend address/configuration, while retained journal evidence can reconcile history but cannot upgrade, roll back, or repair the frozen contract. No recovery claim is made across a reset, lost account, or changed network.
 
+### F-011 Studio account and measurement capability record
+
+The primary AI selected the currently accessible Studio account `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902` from the read-only Studio contracts page and recorded it as the intended `deployer`; no upgrader role applies to this `INTENTIONALLY FROZEN` contract. The pre-E2E capability probe completed at `2026-09-06T02:01:17.3913691+07:00`: the In-App Browser exposed no physical request-level telemetry, so the package locks `OBSERVABLE_ACTION_LEDGER` with no physical-count claim. No signature, deployment, contract write, or wallet transaction was initiated.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.

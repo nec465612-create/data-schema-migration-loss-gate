@@ -9,7 +9,7 @@ CATEGORY: PROJECT
 CHECKPOINT: PRE_DEPLOY
 SOURCE REVISION: ab4be75dd07e2f743174f786cce39765418424a9
 PACKAGE: DSM-LG-PREDEPLOY-AB4BE75
-STATUS: corrective delta for F-010 frozen classification decision record; send only to the retained reviewer route
+STATUS: corrective delta for F-011 Studio account and measurement capability record; send only to the retained reviewer route
 
 ## Objective
 
@@ -153,6 +153,10 @@ At source commit `ab4be75dd07e2f743174f786cce39765418424a9`, the frontend transa
 
 The package records C3 as `INTENTIONALLY FROZEN` because the approved Stage 2 public surface advertises no upgrade method or upgrade storage. On 2026-09-06 the user instructed the primary AI, “Làm đi, bạn có quyền tự quyết”, explicitly authorizing the primary AI to finalize this project decision; the primary AI records and accepts the frozen classification under that authorization. A post-deployment defect therefore requires a replacement contract deployment and new frontend address/configuration; retained journal evidence can reconcile history but cannot upgrade, roll back, or repair the frozen contract. No recovery claim is made across a reset, lost account, or changed network. No ABI signature, storage type, method, or transaction envelope changed.
 
+### F-011 correction delta
+
+The primary AI selected the currently accessible Studio account `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902` from the read-only `https://studio.genlayer.com/contracts` page and recorded it as the intended `deployer`; no upgrader role applies to this `INTENTIONALLY FROZEN` contract. The pre-E2E capability probe completed at `2026-09-06T02:01:17.3913691+07:00`: the In-App Browser exposed no physical request-level telemetry, so the package locks `OBSERVABLE_ACTION_LEDGER` with no physical-count claim. No signature, deployment, contract write, or wallet transaction was initiated. No ABI signature, storage type, method, or transaction envelope changed.
+
 1. The installed Direct Mode runner presents fixture addresses as 20-byte values in local tests. The contract converts either bytes or production-shaped strings to lowercase `0x`-hex before storage, actor checks, indexes, and hashes. This is a local runtime representation adaptation, not a public ABI change.
 2. The reducer fixes structural consequences deterministically and sends only compatible rows to the semantic path. This prevents model output from converting a known structural loss into success.
 3. The installed browser package is `genlayer-js` 1.1.8. `VITE_CONTRACT_ADDRESS` is fail-closed until an exact deployment address exists.
@@ -195,7 +199,7 @@ The local tests cover contract lifecycle, authorization/CAS/no-write behavior, d
 
 ## Classification and live boundary
 
-Classification is `INTENTIONALLY FROZEN`; Stage 2 advertises no upgrade mechanism and the source exposes no upgrade storage or method. The recorded user authorization and decision require a replacement contract deployment plus new frontend/address verification for any post-deployment defect. The journal can reconcile retained history but cannot repair the frozen contract, and no recovery across reset, lost account, or changed network is claimed. This package contains no contract address, signature, deployment transaction, receipt, Explorer/RPC result, GitHub target, Vercel target, or public release URL.
+Classification is `INTENTIONALLY FROZEN`; Stage 2 advertises no upgrade mechanism and the source exposes no upgrade storage or method. The recorded user authorization and decision require a replacement contract deployment plus new frontend/address verification for any post-deployment defect. The journal can reconcile retained history but cannot repair the frozen contract, and no recovery across reset, lost account, or changed network is claimed. The selected Studio account is `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902` for deployer role, and `OBSERVABLE_ACTION_LEDGER` is locked with no physical-count claim. This package contains no contract address, signature, deployment transaction, receipt, Explorer/RPC result, GitHub target, Vercel target, or public release URL.
 
 Studio account: `NOT_LOCKED`.
 Current anonymous Build reviewer route: `codex://threads/01a0725b-91de-7602-85fe-7bc72d414ad9`.

@@ -2,7 +2,7 @@
 
 `DOCUMENT_STATUS: PRE_DEPLOY_READINESS_NOT_APPROVED`
 
-This package is a local exact-revision candidate for anonymous PRE_DEPLOY review. It is not PRE_DEPLOY approval, deployment approval, live evidence, or release approval. The locked Studio account, current reviewer route, and Claude presentation relay remain open gates.
+This package is a local exact-revision candidate for anonymous PRE_DEPLOY review. It is not PRE_DEPLOY approval, deployment approval, live evidence, or release approval. The current reviewer route, complete Studio RPC matrix, and Claude presentation relay remain open gates.
 
 ## Scope and classification
 
@@ -21,6 +21,21 @@ This package is a local exact-revision candidate for anonymous PRE_DEPLOY review
 - User authorization recorded: on 2026-09-06, the user instructed the primary AI, “Làm đi, bạn có quyền tự quyết”, explicitly authorizing the primary AI to finalize this project decision. The primary AI records and accepts the frozen classification under that authorization.
 - Irreversibility disclosure: after deployment, a contract defect cannot be repaired in place. The remedy is a replacement contract deployment, a new address/configuration, and fresh verification; the old deployment and its evidence remain historical.
 - Recovery limitation: the journal can retain transaction hashes and source/context evidence for reconciliation, but it cannot upgrade, roll back, or repair the frozen contract. Recovery is limited by retained local records and access to the original chain/account state; no recovery across a reset, lost account, or changed network is claimed.
+
+## Studio authorization and measurement record
+
+- Selected Studio account: `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`
+- Intended role: `deployer`; upgrader role: `NOT APPLICABLE` because this contract is `INTENTIONALLY FROZEN`.
+- Selection evidence: In-App Browser read of `https://studio.genlayer.com/contracts` showed the selected public address and `998 GEN` balance. No signature, deployment, contract write, or wallet transaction was initiated.
+- `STUDIO_CAPABILITY_PROBE_STATUS: COMPLETE`
+- `STUDIO_MEASUREMENT_MODE: OBSERVABLE_ACTION_LEDGER`
+- `STUDIO_MEASUREMENT_TIMING: PRE_E2E`
+- `STUDIO_CAPABILITY_PROBE_AT: 2026-09-06T02:01:17.3913691+07:00`
+- `STUDIO_CAPABILITY_TOOL_OR_API: In-App Browser capabilities, tab.playwright.evaluate, tab.dev.logs`
+- `STUDIO_CAPABILITY_CHECK: Browser and tab capability lists, page performance-resource API, and developer-log request visibility were inspected on the Studio contracts page.`
+- `STUDIO_CAPABILITY_RESULT: physical request-level telemetry is not exposed; primary-AI Studio actions and visible tab state are observable.`
+- `STUDIO_PHYSICAL_COUNT_CLAIM: NONE`
+- `STUDIO_E2E_STATUS: NOT_STARTED`
 
 ## Exact upstream package
 
@@ -43,6 +58,7 @@ STAGE-2.md SHA-256:                  A44237E81EB8C9336F3AC74444BFE7972D2DF165377
 | Browser smoke | `npm run playwright` in `frontend` | PASS; 3 tests |
 | Unsafe HTML scan | `rg -n "dangerouslySetInnerHTML|innerHTML|innerText|eval\\(" frontend/src frontend/tests` | No matches |
 | Journal key scan | `rg -n "glj1:.*operationFingerprint|operationFingerprint.*glj1:|key.*operationFingerprint" frontend/src frontend/tests` | No matches |
+| Studio capability probe | In-App Browser read-only probe on `https://studio.genlayer.com/contracts` | PASS; `OBSERVABLE_ACTION_LEDGER` locked; no physical-count claim |
 
 The frontend unit result includes journal integrity, caller-fingerprint validation, finalized-status/historical-readback reconciliation, mixed-context quarantine, export-before-archive enforcement, quota, hidden-tab polling pause, cancellation teardown, bounded transient receipt retry, and all required transaction-progress phase vocabulary checks. The browser smoke suite confirms no startup RPC request, disabled signing until journal initialization is healthy, and reload restoration of a retained journal entry with archive locked until export.
 
@@ -110,7 +126,7 @@ docs/STUDIO-E2E-PLAN.md
 
 ## Required review/deployment boundary
 
-No deployment, signature, contract write, GitHub publication, Vercel publication, or live Studio claim is authorized by this document. The next gate is one current anonymous PRE_DEPLOY review bound to the final exact source revision and this package. The old reviewer route in the pasted handoff is for a different project and must not be used.
+No deployment, signature, contract write, GitHub publication, Vercel publication, or live Studio claim is authorized by this document. The selected Studio account and pre-E2E measurement mode are recorded, but the numeric Studio matrix, PRE_DEPLOY approval, deployment, and live evidence remain open. The next gate is one current anonymous PRE_DEPLOY review bound to the final exact source revision and this package. The old reviewer route in the pasted handoff is for a different project and must not be used.
 
 ## Later Studio E2E plan
 
@@ -120,4 +136,4 @@ After exact PRE_DEPLOY approval, the primary AI will execute the rows in `docs/S
 
 - Current anonymous Build reviewer route: `codex://threads/01a0725b-91de-7602-85fe-7bc72d414ad9`.
 - Claude presentation phase: `PROMPT READY — NO CLAUDE RESULT RELAYED`; see `CLAUDE-FRONTEND-REDESIGN-PROMPT.txt`.
-- Studio account/address/transaction evidence: `NOT LOCKED / NOT DEPLOYED`.
+- Studio account: `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`, intended role `deployer`; `OBSERVABLE_ACTION_LEDGER` capability mode locked; not deployed.
