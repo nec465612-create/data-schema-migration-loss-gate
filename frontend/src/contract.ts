@@ -194,36 +194,80 @@ export function currentChainName(): ChainName {
   return config.chainName;
 }
 
-function providerAllowed(name: string, rdns: string): boolean {
-  const identity = `${name} ${rdns}`.toLowerCase();
-  return /metamask|io\.metamask|rabby|io\.rabby|okx|okex|com\.okex\.wallet/.test(identity);
+type SupportedWallet = { name: string; rdns: string };
+
+const supportedWallets: Record<string, SupportedWallet> = {
+  "io.metamask": { name: "MetaMask", rdns: "io.metamask" },
+  "io.rabby": { name: "Rabby", rdns: "io.rabby" },
+  "com.okex.wallet": { name: "OKX Wallet", rdns: "com.okex.wallet" },
+};
+
+type LegacyWalletProvider = Eip1193Provider & {
+  isMetaMask?: boolean;
+  isRabby?: boolean;
+  isOkxWallet?: boolean;
+  isOKExWallet?: boolean;
+};
+
+const legacyWallets: Array<SupportedWallet & { flags: Array<keyof LegacyWalletProvider> }> = [
+  { ...supportedWallets["io.metamask"], flags: ["isMetaMask"] },
+  { ...supportedWallets["io.rabby"], flags: ["isRabby"] },
+  { ...supportedWallets["com.okex.wallet"], flags: ["isOkxWallet", "isOKExWallet"] },
+];
+
+function walletForRdns(rdns: unknown): SupportedWallet | null {
+  return typeof rdns === "string" ? supportedWallets[rdns] ?? null : null;
+}
+
+function providerAllowed(name: unknown, rdns: unknown): boolean {
+  return typeof name === "string" && name.length > 0 && walletForRdns(rdns) !== null;
+}
+
+function legacyWalletForProvider(provider: LegacyWalletProvider): SupportedWallet | null {
+  const matches = legacyWallets.filter((wallet) => wallet.flags.some((flag) => provider[flag] === true));
+  return matches.length === 1 ? matches[0] : null;
+}
+
+const discoveredWallets = new Map<string, WalletOption>();
+let registryWindow: Window | null = null;
+
+function installWalletRegistry(): void {
+  if (registryWindow === window) return;
+  if (registryWindow) registryWindow.removeEventListener("eip6963:announceProvider", announceProvider);
+  discoveredWallets.clear();
+  registryWindow = window;
+  window.addEventListener("eip6963:announceProvider", announceProvider);
+}
+
+function announceProvider(event: Event): void {
+  const detail = (event as CustomEvent<{ info?: { uuid?: string; name?: string; rdns?: string; icon?: string }; provider?: Eip1193Provider }>).detail;
+  const info = detail?.info;
+  const identity = walletForRdns(info?.rdns);
+  if (!detail?.provider || !info?.name || !providerAllowed(info.name, info.rdns) || !identity) return;
+  const id = info.uuid ?? identity.rdns;
+  discoveredWallets.set(id, {
+    id,
+    name: identity.name,
+    rdns: identity.rdns,
+    icon: info.icon,
+    provider: detail.provider,
+  });
 }
 
 export async function discoverWallets(): Promise<WalletOption[]> {
   if (typeof window === "undefined") return [];
-  const discovered = new Map<string, WalletOption>();
-  const announce = (event: Event) => {
-    const detail = (event as CustomEvent<{ info?: { uuid?: string; name?: string; rdns?: string; icon?: string }; provider?: Eip1193Provider }>).detail;
-    const info = detail?.info;
-    if (!detail?.provider || !info?.name || !providerAllowed(info.name, info.rdns ?? "")) return;
-    const id = info.uuid ?? `${info.rdns}:${info.name}`;
-    discovered.set(id, {
-      id,
-      name: info.name,
-      rdns: info.rdns ?? "",
-      icon: info.icon,
-      provider: detail.provider,
-    });
-  };
-  window.addEventListener("eip6963:announceProvider", announce);
+  installWalletRegistry();
   window.dispatchEvent(new Event("eip6963:requestProvider"));
   await new Promise((resolve) => window.setTimeout(resolve, 200));
-  window.removeEventListener("eip6963:announceProvider", announce);
-  const legacy = (window as Window & { ethereum?: Eip1193Provider & { isMetaMask?: boolean } }).ethereum;
-  if (legacy?.isMetaMask && !Array.from(discovered.values()).some((wallet) => wallet.rdns === "io.metamask")) {
-    discovered.set("legacy-metamask", { id: "legacy-metamask", name: "MetaMask", rdns: "io.metamask", provider: legacy });
+  for (const [id, wallet] of discoveredWallets) {
+    if (id.startsWith("legacy-")) discoveredWallets.delete(id);
   }
-  return Array.from(discovered.values());
+  const legacy = (window as Window & { ethereum?: LegacyWalletProvider }).ethereum;
+  const legacyIdentity = legacy ? legacyWalletForProvider(legacy) : null;
+  if (legacy && legacyIdentity && !Array.from(discoveredWallets.values()).some((wallet) => wallet.rdns === legacyIdentity.rdns)) {
+    discoveredWallets.set(`legacy-${legacyIdentity.rdns}`, { id: `legacy-${legacyIdentity.rdns}`, ...legacyIdentity, provider: legacy });
+  }
+  return Array.from(discoveredWallets.values());
 }
 
 export async function connectWallet(wallet: WalletOption): Promise<WalletSession> {
