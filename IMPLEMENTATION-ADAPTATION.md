@@ -61,6 +61,10 @@ The frontend now rebuilds the `glj1:` index on load and visibly renders every re
 
 The frontend transaction coordinator now uses a visibility-aware, abortable wait for receipt and readback polling. Hidden documents schedule no polling timer or RPC; unmount and wallet-session teardown abort the active write; transient receipt transport errors consume the same maximum three receipt-query slots with bounded exponential backoff and jitter; and every submitted-hash cancellation/error path persists `RECONCILE` without resubmission. `frontend/tests/transaction-polling.test.ts` covers hidden-tab pause, cancellation teardown with retained hash, and a bounded 429 retry. This is a frontend-only correction at source commit `ab4be75dd07e2f743174f786cce39765418424a9`; the contract ABI, storage, and transaction envelope are unchanged.
 
+### F-010 frozen classification decision record
+
+The package records C3 as `INTENTIONALLY FROZEN` because the approved Stage 2 public surface advertises no upgrade method or upgrade storage. On 2026-09-06 the user instructed the primary AI, “Làm đi, bạn có quyền tự quyết”, explicitly authorizing the primary AI to finalize this project decision; the primary AI records and accepts the frozen classification under that authorization. The package now discloses that a post-deployment defect requires a replacement deployment and new frontend address/configuration, while retained journal evidence can reconcile history but cannot upgrade, roll back, or repair the frozen contract. No recovery claim is made across a reset, lost account, or changed network.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.

@@ -9,7 +9,7 @@ CATEGORY: PROJECT
 CHECKPOINT: PRE_DEPLOY
 SOURCE REVISION: ab4be75dd07e2f743174f786cce39765418424a9
 PACKAGE: DSM-LG-PREDEPLOY-AB4BE75
-STATUS: corrective delta for F-009 bounded transaction polling; send only to the retained reviewer route
+STATUS: corrective delta for F-010 frozen classification decision record; send only to the retained reviewer route
 
 ## Objective
 
@@ -148,6 +148,10 @@ At source commit `60fe288f5291126dc33dac4fee8b643e1ea70eff`, `reserveJournal` re
 
 At source commit `ab4be75dd07e2f743174f786cce39765418424a9`, the frontend transaction coordinator uses a visibility-aware, abortable wait for receipt and readback polling. Hidden documents schedule no polling timer or RPC; unmount and wallet-session teardown abort the active write; transient receipt transport errors consume the same maximum three receipt-query slots with bounded exponential backoff and jitter; and every submitted-hash cancellation/error path persists `RECONCILE` without resubmission. `frontend/tests/transaction-polling.test.ts` covers hidden-tab pause, cancellation teardown with retained hash, and a bounded 429 retry. No ABI signature, storage type, method, or transaction envelope changed.
 
+### F-010 correction delta
+
+The package records C3 as `INTENTIONALLY FROZEN` because the approved Stage 2 public surface advertises no upgrade method or upgrade storage. On 2026-09-06 the user instructed the primary AI, “Làm đi, bạn có quyền tự quyết”, explicitly authorizing the primary AI to finalize this project decision; the primary AI records and accepts the frozen classification under that authorization. A post-deployment defect therefore requires a replacement contract deployment and new frontend address/configuration; retained journal evidence can reconcile history but cannot upgrade, roll back, or repair the frozen contract. No recovery claim is made across a reset, lost account, or changed network. No ABI signature, storage type, method, or transaction envelope changed.
+
 1. The installed Direct Mode runner presents fixture addresses as 20-byte values in local tests. The contract converts either bytes or production-shaped strings to lowercase `0x`-hex before storage, actor checks, indexes, and hashes. This is a local runtime representation adaptation, not a public ABI change.
 2. The reducer fixes structural consequences deterministically and sends only compatible rows to the semantic path. This prevents model output from converting a known structural loss into success.
 3. The installed browser package is `genlayer-js` 1.1.8. `VITE_CONTRACT_ADDRESS` is fail-closed until an exact deployment address exists.
@@ -190,7 +194,7 @@ The local tests cover contract lifecycle, authorization/CAS/no-write behavior, d
 
 ## Classification and live boundary
 
-Classification is `INTENTIONALLY FROZEN`; Stage 2 advertises no upgrade mechanism and the source exposes no upgrade storage or method. A post-deployment defect would require a new contract deployment and frontend/address update. This package contains no contract address, signature, deployment transaction, receipt, Explorer/RPC result, GitHub target, Vercel target, or public release URL.
+Classification is `INTENTIONALLY FROZEN`; Stage 2 advertises no upgrade mechanism and the source exposes no upgrade storage or method. The recorded user authorization and decision require a replacement contract deployment plus new frontend/address verification for any post-deployment defect. The journal can reconcile retained history but cannot repair the frozen contract, and no recovery across reset, lost account, or changed network is claimed. This package contains no contract address, signature, deployment transaction, receipt, Explorer/RPC result, GitHub target, Vercel target, or public release URL.
 
 Studio account: `NOT_LOCKED`.
 Current anonymous Build reviewer route: `codex://threads/01a0725b-91de-7602-85fe-7bc72d414ad9`.

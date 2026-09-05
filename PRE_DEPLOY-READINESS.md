@@ -15,6 +15,13 @@ This package is a local exact-revision candidate for anonymous PRE_DEPLOY review
 - Source Git revision: `ab4be75dd07e2f743174f786cce39765418424a9` (`Bound transaction polling and cancellation`)
 - Contract address: not deployed
 
+## Classification decision record
+
+- Decision: `INTENTIONALLY FROZEN` for C3; no upgrade method or upgrade storage is part of the approved Stage 2 public surface.
+- User authorization recorded: on 2026-09-06, the user instructed the primary AI, “Làm đi, bạn có quyền tự quyết”, explicitly authorizing the primary AI to finalize this project decision. The primary AI records and accepts the frozen classification under that authorization.
+- Irreversibility disclosure: after deployment, a contract defect cannot be repaired in place. The remedy is a replacement contract deployment, a new address/configuration, and fresh verification; the old deployment and its evidence remain historical.
+- Recovery limitation: the journal can retain transaction hashes and source/context evidence for reconciliation, but it cannot upgrade, roll back, or repair the frozen contract. Recovery is limited by retained local records and access to the original chain/account state; no recovery across a reset, lost account, or changed network is claimed.
+
 ## Exact upstream package
 
 ```text
