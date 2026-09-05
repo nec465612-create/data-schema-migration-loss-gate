@@ -406,6 +406,7 @@ export async function writeAndVerify(
       if (attempt > 0) await wait(4000);
       await reconcileIfContextChanged();
       encoded = await readView("get_version", [BigInt(caseId), BigInt(revision)]);
+      await reconcileIfContextChanged();
       if (encoded !== "null") {
         const parsed = JSON.parse(encoded) as Record<string, any>;
         if (
