@@ -324,6 +324,73 @@ export async function readView(functionName: string, args: unknown[] = []): Prom
   return typeof result === "string" ? result : JSON.stringify(result, jsonReplacer);
 }
 
+export type JournalReconciliation = {
+  record: JournalRecord;
+  readback: string | null;
+  detail: string;
+};
+
+function journalReadbackContext(record: JournalRecord): { caseId: string; revision: string } | null {
+  const parts = record.intent.split(":");
+  try {
+    const args = JSON.parse(record.args_json) as unknown;
+    if (!Array.isArray(args)) return null;
+    if (parts[0] === "create" && record.method === "create_schema_case" && parts.length === 3) {
+      const [, account, nonce] = parts;
+      if (account !== record.account || String(args[0]) !== nonce) return null;
+      return { caseId: "", revision: (BigInt(record.pre_revision) + 1n).toString() };
+    }
+    if (parts.length !== 3 || parts[0] !== record.method || !decimalPattern.test(parts[1]) || parts[2] !== record.pre_revision) return null;
+    if (String(args[0]) !== parts[1] || String(args[args.length - 1]) !== record.pre_revision) return null;
+    return { caseId: parts[1], revision: (BigInt(record.pre_revision) + 1n).toString() };
+  } catch {
+    return null;
+  }
+}
+
+export async function reconcileJournalRecord(record: JournalRecord): Promise<JournalReconciliation> {
+  if (record.chain !== String(chains[config.chainName].id) || record.contract !== config.contractAddress) {
+    throw new Error("JOURNAL_CONTEXT_MISMATCH");
+  }
+  if (!record.tx_hash) {
+    return { record, readback: null, detail: "No transaction hash retained; keep this signing reservation and do not resubmit blindly." };
+  }
+  const transaction = await readClient.getTransaction({ hash: record.tx_hash });
+  if (!isFinalized(transaction)) {
+    const updated = await updateJournal(record.reservation, { status: "RECONCILE" });
+    return { record: updated, readback: null, detail: "Transaction is not finalized; the retained hash remains the source of truth." };
+  }
+  if (transaction.txExecutionResultName !== ExecutionResult.FINISHED_WITH_RETURN) {
+    const updated = await updateJournal(record.reservation, { status: "FINALIZED_ERROR" });
+    return { record: updated, readback: null, detail: `Finalized execution failed (${transaction.txExecutionResultName ?? "UNKNOWN"}).` };
+  }
+  const context = journalReadbackContext(record);
+  if (!context) {
+    const updated = await updateJournal(record.reservation, { status: "RECONCILE" });
+    return { record: updated, readback: null, detail: "Stored intent or arguments do not identify a safe historical readback." };
+  }
+  let caseId = context.caseId;
+  if (!caseId) {
+    const args = JSON.parse(record.args_json) as unknown[];
+    const resolved = await readView("get_id_by_nonce", [record.account, String(args[0])]);
+    caseId = decimal(resolved);
+    if (caseId === "0") {
+      const updated = await updateJournal(record.reservation, { status: "RECONCILE" });
+      return { record: updated, readback: null, detail: "The create transaction is finalized, but its case ID is not readable yet." };
+    }
+  }
+  const encoded = await readView("get_version", [BigInt(caseId), BigInt(context.revision)]);
+  let parsed: Record<string, any> | null = null;
+  try { parsed = encoded === "null" ? null : JSON.parse(encoded) as Record<string, any>; } catch { parsed = null; }
+  const operation = parsed?.last_operation as Record<string, unknown> | undefined;
+  if (parsed?.revision !== context.revision || operation?.method !== record.method || operation.caller !== record.account) {
+    const updated = await updateJournal(record.reservation, { status: "RECONCILE" });
+    return { record: updated, readback: encoded, detail: "Finality is confirmed, but stored context does not match the authoritative historical readback." };
+  }
+  const updated = await updateJournal(record.reservation, { status: "VERIFIED" });
+  return { record: updated, readback: encoded, detail: `Verified historical readback at revision ${context.revision}.` };
+}
+
 export type WriteRequest = {
   method: string;
   args: unknown[];

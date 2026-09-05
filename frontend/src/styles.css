@@ -61,6 +61,14 @@ dt { color: #64748b; font-size: .7rem; text-transform: uppercase; }
 dd { font-size: .84rem; margin: 4px 0 0; overflow-wrap: anywhere; }
 .defaults-list { display: grid; gap: 8px; margin-top: 12px; }
 .default-row { display: grid; gap: 8px; grid-template-columns: 1fr 1fr auto; }
+.journal-list { display: grid; gap: 14px; }
+.journal-entry { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; }
+.journal-entry code { font-size: .74rem; overflow-wrap: anywhere; }
+.journal-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
+.journal-entry details { margin-top: 10px; }
+.journal-entry summary { color: #475569; cursor: pointer; font-size: .84rem; font-weight: 700; }
+.journal-entry .record-view { margin-bottom: 0; max-height: 180px; }
+.journal-actions { margin-top: 12px; }
 .record-view { background: #0f172a; border-radius: 12px; color: #d1fae5; font-size: .76rem; margin: 18px 0 0; max-height: 360px; overflow: auto; padding: 16px; }
 .status-line { background: #e2e8f0; border-radius: 12px; color: #334155; margin-top: 20px; padding: 12px 14px; }
 .error-text { color: #b91c1c; display: block; font-weight: 700; margin-top: 5px; }

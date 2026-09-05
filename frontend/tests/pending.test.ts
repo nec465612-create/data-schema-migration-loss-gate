@@ -4,9 +4,11 @@ import {
   enumerateJournal,
   JOURNAL_INDEX,
   journalKey,
+  archiveJournalRecord,
   rebuildJournalIndex,
   reserveJournal,
   sha256Utf8,
+  serializeJournalRecord,
   updateJournal,
 } from "../src/pending";
 
@@ -58,12 +60,33 @@ describe("crash-recoverable journal", () => {
     await expect(reserveJournal({ ...baseInput, method: "put_mapping", intent: "put_mapping:1:2", operationFingerprint: await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, "put_mapping", "put_mapping:1:2"])) })).rejects.toThrow("PENDING_OPERATION_EXISTS");
   });
 
-  it("rebuilds an index from an orphan record instead of trusting a stale index", async () => {
+  it("recovers an orphan record after a reload instead of trusting a stale index", async () => {
     const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
     const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
     store.setItem(JOURNAL_INDEX, "[]");
     const records = await rebuildJournalIndex();
     expect(records).toHaveLength(1);
     expect(JSON.parse(store.getItem(JOURNAL_INDEX)!)).toEqual([journalKey(record.reservation)]);
+    expect(enumerateJournal()).toEqual([record]);
+  });
+
+  it("enforces the bounded journal quota", async () => {
+    for (let index = 0; index < 32; index += 1) {
+      const intent = `create:${baseInput.account}:${index}`;
+      const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, "create_schema_case", intent]));
+      await reserveJournal({ ...baseInput, method: "create_schema_case", intent, args_json: JSON.stringify([String(index)]), operationFingerprint: fingerprint });
+    }
+    const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, "create_schema_case", "create:0x2222222222222222222222222222222222222222:overflow"]));
+    await expect(reserveJournal({ ...baseInput, method: "create_schema_case", intent: "create:0x2222222222222222222222222222222222222222:overflow", args_json: "[\"overflow\"]", operationFingerprint: fingerprint })).rejects.toThrow("JOURNAL_CAPACITY");
+  });
+
+  it("requires an exported record before archive and emits a portable export", async () => {
+    const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
+    const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
+    const verified = await updateJournal(record.reservation, { tx_hash: `0x${"b".repeat(64)}`, status: "VERIFIED" });
+    expect(serializeJournalRecord(verified)).toContain('"format": "genlayer-journal-v1"');
+    await expect(archiveJournalRecord(record.reservation, false)).rejects.toThrow("EXPORT_REQUIRED");
+    await archiveJournalRecord(record.reservation, true);
+    expect(enumerateJournal()).toHaveLength(0);
   });
 });

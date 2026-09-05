@@ -9,6 +9,7 @@ import {
   discoverWallets,
   expectedChainId,
   getWalletSession,
+  reconcileJournalRecord,
   readView,
   subscribeWalletSession,
   switchToConfiguredNetwork,
@@ -16,7 +17,7 @@ import {
   WriteRequest,
   writeAndVerify,
 } from "./contract";
-import { rebuildJournalIndex } from "./pending";
+import { archiveJournalRecord, JournalRecord, rebuildJournalIndex, serializeJournalRecord } from "./pending";
 import { isPendingPhase, PROGRESS_COPY, WriteProgress } from "./progress";
 import {
   defaultMappingRow,
@@ -136,14 +137,20 @@ function App() {
   const [message, setMessage] = useState("Ready. No chain read is made until you choose an action.");
   const [error, setError] = useState("");
   const [journalReady, setJournalReady] = useState(false);
+  const [journal, setJournal] = useState<JournalRecord[]>([]);
+  const [journalReadbacks, setJournalReadbacks] = useState<Record<string, string>>({});
+  const [journalExported, setJournalExported] = useState<Record<string, boolean>>({});
   const [progress, setProgress] = useState<WriteProgress>({ phase: "IDLE" });
 
   useEffect(() => {
     void rebuildJournalIndex()
-      .then(() => setJournalReady(true))
+      .then((records) => {
+        setJournal(records);
+        setJournalReady(true);
+      })
       .catch((caught) => {
         setJournalReady(false);
-        setMessage("Journal lock unavailable; signing is disabled. Reads and export remain available.");
+        setMessage("Journal lock unavailable; signing is disabled. Retained entries could not be loaded.");
         setError(String(caught));
       });
   }, []);
@@ -243,13 +250,42 @@ function App() {
 
   async function reconcileJournal() {
     try {
-      await rebuildJournalIndex();
+      const records = await rebuildJournalIndex();
+      const reconciled: JournalRecord[] = [];
+      const readbacks: Record<string, string> = {};
+      for (const record of records) {
+        const result = await reconcileJournalRecord(record);
+        reconciled.push(result.record);
+        if (result.readback !== null) readbacks[result.record.reservation] = result.readback;
+      }
+      setJournal(reconciled);
+      setJournalReadbacks(readbacks);
       setJournalReady(true);
-      setMessage("Local journal rebuilt. Review the retained hash and chain state; no transaction was resubmitted.");
+      setMessage("Retained journal reconciled against finalized status and authoritative historical readback; no transaction was resubmitted.");
     } catch (caught) {
       setJournalReady(false);
       setError(String(caught));
     }
+  }
+
+  function exportJournal(record: JournalRecord) {
+    const blob = new Blob([serializeJournalRecord(record)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `genlayer-journal-${record.reservation}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setJournalExported((current) => ({ ...current, [record.reservation]: true }));
+    setMessage(`Journal record ${record.reservation} exported. It may now be archived if its status is VERIFIED or FINALIZED_ERROR.`);
+  }
+
+  async function archiveExportedJournal(record: JournalRecord) {
+    try {
+      await archiveJournalRecord(record.reservation, journalExported[record.reservation] === true);
+      setJournal((current) => current.filter((item) => item.reservation !== record.reservation));
+      setMessage(`Journal record ${record.reservation} archived after export.`);
+    } catch (caught) { setError(String(caught)); }
   }
 
   function baseRequest(): WriteRequest {
@@ -336,6 +372,29 @@ function App() {
           {connection && <button type="button" className="quiet-button" onClick={() => { disconnectWallet(); setMessage("Wallet disconnected."); }}>Disconnect</button>}
         </div>
         <p className="muted">Expected chain ID: {expectedChainId()} · account: {account ?? "—"}</p>
+      </section>
+
+      <section className="panel journal-panel" aria-labelledby="journal-heading">
+        <div className="section-heading">
+          <div><h2 id="journal-heading">Recovery journal</h2><p className="muted">Read-only retained transaction context. Export a record before archiving it.</p></div>
+          <button type="button" className="quiet-button" onClick={() => void reconcileJournal()}>Reconcile stored context</button>
+        </div>
+        {journal.length === 0 ? <p className="muted">No retained transaction records.</p> : <div className="journal-list">
+          {journal.map((record) => <article className="journal-entry" data-journal-reservation={record.reservation} key={record.reservation}>
+            <div className="detail-header"><div><p className="eyebrow">{record.method}</p><h3>{record.status}</h3></div><code>{record.tx_hash || "No transaction hash"}</code></div>
+            <dl className="facts journal-facts">
+              <div><dt>Chain</dt><dd>{record.chain}</dd></div><div><dt>Contract</dt><dd>{record.contract}</dd></div><div><dt>Account</dt><dd>{record.account}</dd></div><div><dt>Intent</dt><dd>{record.intent}</dd></div>
+              <div><dt>Pre revision</dt><dd>{record.pre_revision}</dd></div><div><dt>Pre-state hash</dt><dd>{record.pre_hash}</dd></div>
+            </dl>
+            <details><summary>Stored arguments</summary><pre className="record-view">{record.args_json}</pre></details>
+            {journalReadbacks[record.reservation] && <details open><summary>Authoritative readback</summary><pre className="record-view">{journalReadbacks[record.reservation]}</pre></details>}
+            <div className="toolbar journal-actions">
+              <button type="button" className="quiet-button" onClick={() => exportJournal(record)}>Export JSON</button>
+              <button type="button" className="quiet-button" onClick={() => void reconcileJournalRecord(record).then((result) => { setJournal((current) => current.map((item) => item.reservation === result.record.reservation ? result.record : item)); if (result.readback !== null) setJournalReadbacks((current) => ({ ...current, [result.record.reservation]: result.readback as string })); setMessage(result.detail); }).catch((caught) => setError(String(caught)))}>Reconcile record</button>
+              <button type="button" className="quiet-button" disabled={!journalExported[record.reservation] || !["VERIFIED", "FINALIZED_ERROR"].includes(record.status)} onClick={() => void archiveExportedJournal(record)}>Archive after export</button>
+            </div>
+          </article>)}
+        </div>}
       </section>
 
       <section className="panel" aria-labelledby="create-heading">

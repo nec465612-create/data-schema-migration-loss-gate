@@ -19,3 +19,35 @@ test("public warning and schema editors render as text and controls", async ({ p
   await expect(page.getByRole("heading", { name: "new" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Create case" })).toBeDisabled();
 });
+
+test("reload restores a retained journal and keeps archive behind export", async ({ page }) => {
+  await page.addInitScript(() => {
+    const reservation = "a".repeat(32);
+    const record = {
+      v: 1,
+      reservation,
+      chain: "4242",
+      contract: "0x9999999999999999999999999999999999999999",
+      account: "0x2222222222222222222222222222222222222222",
+      method: "lock_schemas",
+      intent: "lock_schemas:1:0",
+      args_json: "[\"1\",\"0\"]",
+      pre_revision: "0",
+      pre_hash: "a".repeat(64),
+      tx_hash: `0x${"b".repeat(64)}`,
+      status: "VERIFIED",
+      created_ms: "1",
+    };
+    localStorage.setItem(`glj1:${reservation}`, JSON.stringify(record));
+    localStorage.setItem("glj1:index", JSON.stringify([`glj1:${reservation}`]));
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Recovery journal" })).toBeVisible();
+  await expect(page.getByText("lock_schemas", { exact: true })).toBeVisible();
+  const archive = page.getByRole("button", { name: "Archive after export" });
+  await expect(archive).toBeDisabled();
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export JSON" }).click();
+  await (await download).path();
+  await expect(archive).toBeEnabled();
+});

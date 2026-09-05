@@ -125,6 +125,11 @@ export function enumerateJournal(): JournalRecord[] {
   return records.sort((a, b) => Number(BigInt(a.created_ms) - BigInt(b.created_ms)));
 }
 
+export function serializeJournalRecord(record: JournalRecord): string {
+  validateJournalRecord(record);
+  return `${JSON.stringify({ format: "genlayer-journal-v1", record }, null, 2)}\n`;
+}
+
 function writeIndex(store: Storage, records: JournalRecord[]): void {
   store.setItem(JOURNAL_INDEX, JSON.stringify(records.map((record) => journalKey(record.reservation))));
 }
