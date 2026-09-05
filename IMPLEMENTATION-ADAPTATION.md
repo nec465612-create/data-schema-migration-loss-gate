@@ -49,6 +49,10 @@ The frontend now owns one wallet-session snapshot for account, chain, and `canWr
 
 Wallet discovery now accepts only the exact EIP-6963 RDNS identities `io.metamask`, `io.rabby`, and `com.okex.wallet`, presents canonical wallet names, rejects unknown or ambiguous legacy providers, recognizes the exact MetaMask, Rabby, and OKX legacy flags, rejects providers without a callable EIP-1193 `request`, and deduplicates both announcement UUIDs and provider objects. The EIP-6963 announce listener is retained as a registry listener so providers announced after the initial bounded discovery window remain available. `frontend/tests/wallet-discovery.test.ts` covers exact RDNS filtering, late announcements, canonical names, ambiguous/unidentified legacy rejection, duplicate UUIDs for one provider object, and non-callable providers. This is a frontend-only correction at source commit `716ecce58705c9a463ac6908718798989f753e0a`; the contract ABI, storage, and transaction envelope are unchanged.
 
+### F-007 journal recovery UI
+
+The frontend now rebuilds the `glj1:` index on load and visibly renders every retained journal record as read-only chain, contract, account, intent, arguments, pre-state, transaction-hash, and status context. Reconciliation queries the retained transaction hash for finality, maps finalized execution errors, resolves create IDs from the stored creator/nonce, and verifies the stored method/caller/revision against authoritative `get_version` readback without resubmitting. Each record has a portable JSON export; `archiveJournalRecord` is only reachable after that record has been exported and only for `VERIFIED` or `FINALIZED_ERROR`. Regressions cover reload/orphan recovery, the 32-record quota, export-before-archive, finalized/readback reconciliation, non-finalized retention, and browser-visible recovery/archive gating. This is a frontend-only correction at source commit `37f7a6fa3056dcd5a64b39a486205b8d6c718e41`; the contract ABI, storage, and transaction envelope are unchanged.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.
