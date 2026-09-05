@@ -57,6 +57,10 @@ The frontend now rebuilds the `glj1:` index on load and visibly renders every re
 
 `reserveJournal` now recomputes the operation fingerprint inside the exclusive journal lock from the exact `[chain, contract, account, method, intent]` context and rejects a mismatched caller-supplied fingerprint before any reservation or index write. `frontend/tests/pending.test.ts` covers the mismatch rejection and confirms the journal remains empty. This is a frontend-only correction at source commit `60fe288f5291126dc33dac4fee8b643e1ea70eff`; the contract ABI, storage, and transaction envelope are unchanged.
 
+### F-009 bounded transaction polling
+
+The frontend transaction coordinator now uses a visibility-aware, abortable wait for receipt and readback polling. Hidden documents schedule no polling timer or RPC; unmount and wallet-session teardown abort the active write; transient receipt transport errors consume the same maximum three receipt-query slots with bounded exponential backoff and jitter; and every submitted-hash cancellation/error path persists `RECONCILE` without resubmission. `frontend/tests/transaction-polling.test.ts` covers hidden-tab pause, cancellation teardown with retained hash, and a bounded 429 retry. This is a frontend-only correction at source commit `ab4be75dd07e2f743174f786cce39765418424a9`; the contract ABI, storage, and transaction envelope are unchanged.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.
@@ -65,7 +69,7 @@ The frontend now rebuilds the `glj1:` index on load and visibly renders every re
 - `INTENTIONALLY FROZEN` classification; no upgrade method or upgrade storage.
 - Separate Studio and browser RPC budgets.
 - `glj1:` random reservation keys, separate operation fingerprint comparison, Web Locks, orphan recovery and no automatic resubmission.
-- Final browser success only after finalized execution success and exact historical `get_version` readback.
+- Final browser success only after finalized execution success and exact historical `get_version` readback; receipt polling pauses while hidden, abort/session teardown cancels timers, and transient receipt errors stay within the bounded query budget.
 
 ## Local evidence
 
