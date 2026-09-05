@@ -11,6 +11,7 @@ import {
 } from "./pending";
 import { WriteProgress } from "./progress";
 import { chainMatches } from "./network";
+import { sameWriteContext, WriteContext } from "./write-context";
 
 export type ChainName = "localnet" | "studionet" | "testnetAsimov" | "testnetBradbury";
 export type Eip1193Provider = {
@@ -86,6 +87,7 @@ let walletSession: WalletSession | null = null;
 const sessionListeners = new Set<() => void>();
 let removeSessionListeners = () => undefined;
 let sessionGeneration = 0;
+let walletRevision = 0;
 
 export type WalletSession = {
   account: string;
@@ -127,6 +129,7 @@ function teardownSessionListeners(): void {
 }
 
 function commitWalletSession(next: Omit<WalletSession, "canWrite"> | null): void {
+  walletRevision += 1;
   if (!next) {
     walletSession = null;
     writeClient = null;
@@ -308,20 +311,33 @@ export async function writeAndVerify(
 ): Promise<{ record: JournalRecord; caseId: string; encoded: string }> {
   if (!writeClient || !walletSession) throw new Error("WALLET_NOT_CONNECTED");
   if (!walletSession.canWrite || !chainMatches(expectedChainId(), walletSession.chainId)) throw new Error("WRONG_CHAIN");
+  const operationSession = walletSession;
+  const operationClient = writeClient;
+  const operationContext: WriteContext = {
+    generation: walletRevision,
+    session: operationSession,
+    client: operationClient,
+  };
+  const contextIsCurrent = () => sameWriteContext(operationContext, {
+    generation: walletRevision,
+    session: walletSession,
+    client: writeClient,
+  });
   const contract = requireAddress();
   const argsJson = JSON.stringify(request.args, jsonReplacer);
   const argsHash = await sha256Utf8(canonicalJson(request.argsForHash));
+  if (!contextIsCurrent()) throw new Error("WALLET_SESSION_CHANGED");
   const operationFingerprint = await sha256Utf8(JSON.stringify([
     String(chains[config.chainName].id),
     contract,
-    walletSession.account,
+    operationSession.account,
     request.method,
     request.intent,
   ]));
   const reserved = await reserveJournal({
     chain: String(chains[config.chainName].id),
     contract,
-    account: walletSession.account,
+    account: operationSession.account,
     method: request.method,
     intent: request.intent,
     operationFingerprint,
@@ -332,14 +348,27 @@ export async function writeAndVerify(
     status: "SIGNING",
   });
   let txHash = "";
+  let reservationRemoved = false;
+  const reconcileIfContextChanged = async () => {
+    if (!contextIsCurrent()) {
+      await mark(reserved.reservation, "RECONCILE", txHash);
+      throw new Error("RECONCILE_WALLET_SESSION_CHANGED");
+    }
+  };
   try {
+    if (!contextIsCurrent()) {
+      await removeUnsignedJournal(reserved.reservation);
+      reservationRemoved = true;
+      throw new Error("WALLET_SESSION_CHANGED");
+    }
     onProgress({ phase: "WAITING_FOR_WALLET" });
-    txHash = String(await writeClient.writeContract({
+    txHash = String(await operationClient.writeContract({
       address: contract,
       functionName: request.method,
       args: request.args,
       value: 0n,
     }));
+    await reconcileIfContextChanged();
     await updateJournal(reserved.reservation, { tx_hash: txHash, status: "SUBMITTED" });
     onProgress({ phase: "SUBMITTED", hash: txHash });
 
@@ -347,7 +376,9 @@ export async function writeAndVerify(
     onProgress({ phase: "WAITING_FOR_FINALITY", hash: txHash });
     for (const delay of [2000, 4000, 8000]) {
       await wait(delay);
+      await reconcileIfContextChanged();
       transaction = await readClient.getTransaction({ hash: txHash });
+      await reconcileIfContextChanged();
       if (isFinalized(transaction)) break;
     }
     if (!isFinalized(transaction)) {
@@ -373,6 +404,7 @@ export async function writeAndVerify(
     onProgress({ phase: "VERIFYING_READBACK", hash: txHash });
     for (let attempt = 0; attempt < readAttempts; attempt += 1) {
       if (attempt > 0) await wait(4000);
+      await reconcileIfContextChanged();
       encoded = await readView("get_version", [BigInt(caseId), BigInt(revision)]);
       if (encoded !== "null") {
         const parsed = JSON.parse(encoded) as Record<string, any>;
@@ -382,7 +414,7 @@ export async function writeAndVerify(
           const operation = parsed.last_operation as Record<string, unknown> | undefined;
           if (
             operation?.method === request.method &&
-            operation.caller === walletSession.account &&
+            operation.caller === operationSession.account &&
             operation.args_hash === argsHash &&
             request.verify(parsed)
           ) {
@@ -397,7 +429,9 @@ export async function writeAndVerify(
     throw new Error("RECONCILE_HISTORICAL_READBACK_MISMATCH");
   } catch (error) {
     if (txHash === "") {
-      if (providerRejected(error)) {
+      if (reservationRemoved) {
+        onProgress({ phase: "FAILED", message: errorText(error) });
+      } else if (providerRejected(error)) {
         try { await removeUnsignedJournal(reserved.reservation); } catch { /* retain the original wallet error */ }
         onProgress({ phase: "REJECTED", message: errorText(error) });
       } else {

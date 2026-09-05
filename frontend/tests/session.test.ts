@@ -7,6 +7,7 @@ import {
   getWalletSession,
 } from "../src/contract";
 import type { Eip1193Provider, WalletOption } from "../src/contract";
+import { sameWriteContext } from "../src/write-context";
 
 type Listener = (...args: unknown[]) => void;
 
@@ -46,6 +47,15 @@ function walletFixture() {
 afterEach(() => disconnectWallet());
 
 describe("wallet session event binding", () => {
+  it("invalidates an in-flight write context when the account is replaced", () => {
+    const sessionA = { account: "0x1111111111111111111111111111111111111111" };
+    const sessionB = { account: "0x2222222222222222222222222222222222222222" };
+    const clientA = {};
+    const clientB = {};
+    expect(sameWriteContext({ generation: 1, session: sessionA, client: clientA }, { generation: 1, session: sessionA, client: clientA })).toBe(true);
+    expect(sameWriteContext({ generation: 1, session: sessionA, client: clientA }, { generation: 2, session: sessionB, client: clientB })).toBe(false);
+  });
+
   it("rebinds account, disables wrong-chain writes, and tears down on disconnect", async () => {
     const fixture = walletFixture();
     await connectWallet(fixture.wallet);
