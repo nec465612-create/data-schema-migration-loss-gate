@@ -7,9 +7,9 @@ PROJECT: Data Schema Migration Loss Gate
 PROJECT PATH: E:\Genlayer-Projects\data-schema-migration-loss-gate
 CATEGORY: PROJECT
 CHECKPOINT: PRE_DEPLOY
-SOURCE REVISION: f6f428c15e448aeaf114a4676f05fb8da1a33aa6
-PACKAGE: DSM-LG-PREDEPLOY-F6F428C
-STATUS: corrective delta for F-001; send only to the retained reviewer route
+SOURCE REVISION: 29c6b3bc0b6c30fee02ca1d927446b09bed8b72b
+PACKAGE: DSM-LG-PREDEPLOY-29C6B3B
+STATUS: corrective delta for F-002; send only to the retained reviewer route
 
 ## Objective
 
@@ -69,9 +69,9 @@ The deterministic reducer must enforce exact old/new field structure, one respon
 ## Exact implementation artifacts and hashes
 
 ```text
-contracts/main.py                         6ABA47E264C77CE4BF22186377CFDD7484B926E134FFA06F152416BD54EB25E8
+contracts/main.py                         C2D0CA66B7533FF243C31988EC3652290B940A3D78BA0BEC02C7D7D04C517589
 contract-schema.json                      16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF
-tests/test_contract.py                    2625714C38E80B3484B083FFB5C7AFA6888A56FB0FD0AC536E63C461BA560682
+tests/test_contract.py                    95F2ED51FABB7963D239CA1A9AB5A5412B2EAAF0C031ED6FBB42C13B1D5F8E6C
 probes/schema_probe.py                   56E77FB226EE223100AFDA26E6CC8797A048EBB5E90157AB8F6114F53122A8B9
 probes/schema_probe.json                 E8D8C7F03BE1AD732393A792DED323DC56AD391E689D6CF908E2068E50C4CFF3
 frontend/src/App.tsx                     E6C924C5DAFDB432E52327ECAB09A434FCFE0DC54199F3E3E0CF4F928509BF4E
@@ -107,6 +107,10 @@ CLAUDE-FRONTEND-REDESIGN-PROMPT.txt
 
 At source commit `f6f428c15e448aeaf114a4676f05fb8da1a33aa6`, `contracts/main.py` stores `id`, `revision`, and `parent` as canonical decimal strings in case/history JSON. `_commit_case` preserves string revision serialization on every later commit. `frontend/src/contract.ts` now accepts only an exact string revision, and the contract test asserts exact string values for all three fields. No ABI signature, storage type, or transaction envelope changed.
 
+### F-002 correction delta
+
+At source commit `29c6b3bc0b6c30fee02ca1d927446b09bed8b72b`, `_parse_json` converts raw CRLF line endings to LF and recursively normalizes parsed string values before validation and canonical freezing. The regression creates a CRLF envelope and CRLF field meanings, verifies frozen LF values, and replaces them with LF-equivalent input without a base-data difference. No ABI signature, storage type, or transaction envelope changed.
+
 1. The installed Direct Mode runner presents fixture addresses as 20-byte values in local tests. The contract converts either bytes or production-shaped strings to lowercase `0x`-hex before storage, actor checks, indexes, and hashes. This is a local runtime representation adaptation, not a public ABI change.
 2. The reducer fixes structural consequences deterministically and sends only compatible rows to the semantic path. This prevents model output from converting a known structural loss into success.
 3. The installed browser package is `genlayer-js` 1.1.8. `VITE_CONTRACT_ADDRESS` is fail-closed until an exact deployment address exists.
@@ -127,7 +131,7 @@ genvm-lint typecheck contracts/main.py
 PASS; no type errors
 
 gltest -q tests
-PASS; 7 tests
+PASS; 8 tests, including CRLF normalization
 
 npm --prefix frontend run test
 PASS; 2 test files, 4 tests
@@ -178,7 +182,7 @@ Apply the current canonical governance gates, including schema/runtime compatibi
 ```text
 REVIEWER: anonymous co-review AI
 CHECKPOINT: PRE_DEPLOY
-REVISION/PACKAGE: source f6f428c15e448aeaf114a4676f05fb8da1a33aa6; package DSM-LG-PREDEPLOY-F6F428C
+REVISION/PACKAGE: source 29c6b3bc0b6c30fee02ca1d927446b09bed8b72b; package DSM-LG-PREDEPLOY-29C6B3B
 VERDICT: ANONYMOUS REVIEW APPROVED - PRE_DEPLOY
 FINDINGS: NONE, or for each finding provide ID, severity, violated requirement, exact file/line/URL/artifact, evidence, cause or contradiction, impact, concrete correction, and verification criterion.
 REBUTTALS: none, or each finding ID with accepted/revised/retained decision and exact evidence.

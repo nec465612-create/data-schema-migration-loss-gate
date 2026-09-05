@@ -29,6 +29,10 @@ The installed current SDK package is `genlayer-js` (not a separate `@genlayer-js
 
 Stage 2 requires every persisted case `id`, `revision`, and `parent` to be canonical decimal strings in JSON transport. The implementation keeps numeric values only for typed storage keys, counters, and ABI arguments; record/history JSON now writes and verifies those three fields as strings. This is a corrective delta for PRE_DEPLOY finding F-001, with exact string assertions in `tests/test_contract.py` and strict frontend readback matching.
 
+### CRLF input normalization
+
+Stage 2 requires CRLF input to normalize to LF before validation and freezing. `_parse_json` now normalizes raw JSON line endings and recursively normalizes parsed string values before any schema validation or canonical storage. A regression covers CRLF JSON envelopes, CRLF field text, and replacement with LF-equivalent input.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.

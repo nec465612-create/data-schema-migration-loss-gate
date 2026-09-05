@@ -12,7 +12,7 @@ This package is a local exact-revision candidate for anonymous PRE_DEPLOY review
 - Classification: `INTENTIONALLY FROZEN`
 - Upgrade method/storage: none
 - Deployment target: Studionet only, after PRE_DEPLOY approval
-- Source Git revision: `f6f428c15e448aeaf114a4676f05fb8da1a33aa6` (`Fix canonical case record serialization`)
+- Source Git revision: `29c6b3bc0b6c30fee02ca1d927446b09bed8b72b` (`Normalize CRLF before JSON validation`)
 - Contract address: not deployed
 
 ## Exact upstream package
@@ -42,9 +42,9 @@ The frontend unit result includes journal integrity and all required transaction
 ## Exact source manifest at the source revision
 
 ```text
-contracts/main.py                         6ABA47E264C77CE4BF22186377CFDD7484B926E134FFA06F152416BD54EB25E8
+contracts/main.py                         C2D0CA66B7533FF243C31988EC3652290B940A3D78BA0BEC02C7D7D04C517589
 contract-schema.json                      16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF
-tests/test_contract.py                    2625714C38E80B3484B083FFB5C7AFA6888A56FB0FD0AC536E63C461BA560682
+tests/test_contract.py                    95F2ED51FABB7963D239CA1A9AB5A5412B2EAAF0C031ED6FBB42C13B1D5F8E6C
 probes/schema_probe.py                   56E77FB226EE223100AFDA26E6CC8797A048EBB5E90157AB8F6114F53122A8B9
 probes/schema_probe.json                 E8D8C7F03BE1AD732393A792DED323DC56AD391E689D6CF908E2068E50C4CFF3
 frontend/src/App.tsx                     E6C924C5DAFDB432E52327ECAB09A434FCFE0DC54199F3E3E0CF4F928509BF4E
