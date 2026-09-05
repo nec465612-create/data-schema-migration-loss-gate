@@ -63,6 +63,7 @@ dd { font-size: .84rem; margin: 4px 0 0; overflow-wrap: anywhere; }
 .default-row { display: grid; gap: 8px; grid-template-columns: 1fr 1fr auto; }
 .journal-list { display: grid; gap: 14px; }
 .journal-entry { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; }
+.journal-quarantine { background: #fff7ed; border: 1px solid #fdba74; border-radius: 9px; color: #9a3412; font-size: .84rem; margin: 12px 0 0; padding: 9px 10px; }
 .journal-entry code { font-size: .74rem; overflow-wrap: anywhere; }
 .journal-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
 .journal-entry details { margin-top: 10px; }

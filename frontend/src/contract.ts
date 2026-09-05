@@ -350,7 +350,12 @@ function journalReadbackContext(record: JournalRecord): { caseId: string; revisi
 
 export async function reconcileJournalRecord(record: JournalRecord): Promise<JournalReconciliation> {
   if (record.chain !== String(chains[config.chainName].id) || record.contract !== config.contractAddress) {
-    throw new Error("JOURNAL_CONTEXT_MISMATCH");
+    const quarantined = await updateJournal(record.reservation, { status: "QUARANTINED" });
+    return {
+      record: quarantined,
+      readback: null,
+      detail: "Quarantined: stored chain or contract differs from this runtime; export the retained context and reconcile it in its original environment.",
+    };
   }
   if (!record.tx_hash) {
     return { record, readback: null, detail: "No transaction hash retained; keep this signing reservation and do not resubmit blindly." };

@@ -18,7 +18,7 @@ vi.mock("genlayer-js/types", () => ({
   TransactionStatus: { FINALIZED: "FINALIZED" },
 }));
 
-import { enumerateJournal, reserveJournal, sha256Utf8 } from "../src/pending";
+import { archiveJournalRecord, enumerateJournal, reserveJournal, sha256Utf8 } from "../src/pending";
 
 vi.stubEnv("VITE_GENLAYER_CHAIN", "studionet");
 vi.stubEnv("VITE_CONTRACT_ADDRESS", "0x9999999999999999999999999999999999999999");
@@ -87,5 +87,24 @@ describe("journal recovery reconciliation", () => {
     expect(result.record.status).toBe("RECONCILE");
     expect(result.readback).toBeNull();
     expect(mocks.readContract).not.toHaveBeenCalled();
+  });
+
+  it("quarantines a mixed-journal record from another contract without querying it", async () => {
+    const currentFingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
+    const foreignInput = { ...baseInput, contract: "0x8888888888888888888888888888888888888888" };
+    const foreignFingerprint = await sha256Utf8(JSON.stringify([foreignInput.chain, foreignInput.contract, foreignInput.account, foreignInput.method, foreignInput.intent]));
+    const current = await reserveJournal({ ...baseInput, operationFingerprint: currentFingerprint });
+    const foreign = await reserveJournal({ ...foreignInput, operationFingerprint: foreignFingerprint });
+
+    const result = await contract.reconcileJournalRecord(foreign);
+
+    expect(result.record.status).toBe("QUARANTINED");
+    expect(result.detail).toContain("Quarantined");
+    expect(mocks.getTransaction).not.toHaveBeenCalled();
+    await expect(archiveJournalRecord(foreign.reservation, true)).rejects.toThrow("ARCHIVE_NOT_ALLOWED");
+    expect(enumerateJournal()).toEqual(expect.arrayContaining([
+      expect.objectContaining({ reservation: current.reservation, status: "SUBMITTED" }),
+      expect.objectContaining({ reservation: foreign.reservation, status: "QUARANTINED" }),
+    ]));
   });
 });

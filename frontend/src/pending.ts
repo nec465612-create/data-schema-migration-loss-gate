@@ -9,7 +9,8 @@ export type JournalStatus =
   | "SUBMITTED"
   | "RECONCILE"
   | "VERIFIED"
-  | "FINALIZED_ERROR";
+  | "FINALIZED_ERROR"
+  | "QUARANTINED";
 
 export type JournalRecord = {
   v: 1;
@@ -78,7 +79,7 @@ export function validateJournalRecord(value: unknown): JournalRecord {
   if (!HEX64_RE.test(value.pre_hash as string) || !(/^$|^0x[0-9a-f]{64}$/.test(value.tx_hash as string))) {
     throw new Error("CORRUPT_JOURNAL");
   }
-  if (!["SIGNING", "SUBMITTED", "RECONCILE", "VERIFIED", "FINALIZED_ERROR"].includes(status)) {
+  if (!["SIGNING", "SUBMITTED", "RECONCILE", "VERIFIED", "FINALIZED_ERROR", "QUARANTINED"].includes(status)) {
     throw new Error("CORRUPT_JOURNAL");
   }
   return value as JournalRecord;

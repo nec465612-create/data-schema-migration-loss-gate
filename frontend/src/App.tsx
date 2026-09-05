@@ -382,6 +382,7 @@ function App() {
         {journal.length === 0 ? <p className="muted">No retained transaction records.</p> : <div className="journal-list">
           {journal.map((record) => <article className="journal-entry" data-journal-reservation={record.reservation} key={record.reservation}>
             <div className="detail-header"><div><p className="eyebrow">{record.method}</p><h3>{record.status}</h3></div><code>{record.tx_hash || "No transaction hash"}</code></div>
+            {record.status === "QUARANTINED" && <p className="journal-quarantine">Stored chain or contract differs from this runtime. This record is preserved for export and must be reconciled in its original environment.</p>}
             <dl className="facts journal-facts">
               <div><dt>Chain</dt><dd>{record.chain}</dd></div><div><dt>Contract</dt><dd>{record.contract}</dd></div><div><dt>Account</dt><dd>{record.account}</dd></div><div><dt>Intent</dt><dd>{record.intent}</dd></div>
               <div><dt>Pre revision</dt><dd>{record.pre_revision}</dd></div><div><dt>Pre-state hash</dt><dd>{record.pre_hash}</dd></div>
