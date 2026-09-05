@@ -45,6 +45,10 @@ The frontend now treats an absent or mismatched chain as invalid, disables Creat
 
 The frontend now owns one wallet-session snapshot for account, chain, and `canWrite`, subscribes the selected provider to `accountsChanged`, `chainChanged`, and `disconnect`, rebinds the session client on valid account changes, clears write capability on wrong-chain events, and tears down listeners on disconnect or replacement. Each write captures an immutable session/client/generation context; invalidation before signing removes the unsigned reservation, while invalidation after a hash preserves that hash and enters reconciliation. The readback path checks the context again after the awaited `get_version` result and before `VERIFIED`/`SUCCESS`. App controls subscribe to that snapshot, and regressions cover idle transitions, account replacement during the real `writeAndVerify` historical readback, wrong-chain disablement, matching-chain recovery, listener teardown, and disconnect. This is a frontend-only correction at source commit `d1447bcbf35e69b0ed2fb67813fe3dd9ce40fd8e`; the contract ABI, storage, and transaction envelope are unchanged.
 
+### F-006 wallet discovery allowlist
+
+Wallet discovery now accepts only the exact EIP-6963 RDNS identities `io.metamask`, `io.rabby`, and `com.okex.wallet`, presents canonical wallet names, rejects unknown or ambiguous legacy providers, and recognizes the exact MetaMask, Rabby, and OKX legacy flags. The EIP-6963 announce listener is retained as a registry listener so providers announced after the initial bounded discovery window remain available. `frontend/tests/wallet-discovery.test.ts` covers exact RDNS filtering, late announcements, canonical names, and ambiguous/unidentified legacy rejection. This is a frontend-only correction at source commit `28289643c9d01104b443aaac5bd31f5a843a149a`; the contract ABI, storage, and transaction envelope are unchanged.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.
