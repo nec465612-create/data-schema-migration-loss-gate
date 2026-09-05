@@ -33,6 +33,10 @@ Stage 2 requires every persisted case `id`, `revision`, and `parent` to be canon
 
 Stage 2 requires CRLF input to normalize to LF before validation and freezing. `_parse_json` now normalizes raw JSON line endings and recursively normalizes parsed string values before any schema validation or canonical storage. A regression covers CRLF JSON envelopes, CRLF field text, and replacement with LF-equivalent input.
 
+### F-003 multi-field mapping editor
+
+The mapping editor now initializes one row for every old field, supports adding any remaining old-field row up to the Stage 2 cap, exposes old-field selection, and disables a new-field target already selected by another non-DROP row. A pure regression suite covers multi-field initialization and duplicate-target availability. This is a frontend-only correction at source commit `c26b1c5b0eff3fd2652b87bb1924696a5e805b47`; the contract ABI, storage, and transaction envelope are unchanged.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.
