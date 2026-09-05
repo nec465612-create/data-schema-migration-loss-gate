@@ -1,0 +1,11 @@
+artifacts/
+.pytest_cache/
+__pycache__/
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/.vite/
+frontend/tsconfig.tsbuildinfo
+frontend/.env
+frontend/.env.*
+!frontend/.env.example

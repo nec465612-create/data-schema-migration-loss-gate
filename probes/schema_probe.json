@@ -1,0 +1,47 @@
+{
+  "ctor": {
+    "params": [],
+    "kwparams": {}
+  },
+  "methods": {
+    "add_item": {
+      "params": [
+        [
+          "label",
+          "string"
+        ],
+        [
+          "count",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "classify": {
+      "params": [
+        [
+          "payload",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "echo_address": {
+      "params": [
+        [
+          "address",
+          "address"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "address"
+    }
+  }
+}
