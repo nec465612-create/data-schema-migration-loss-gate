@@ -446,7 +446,7 @@ function App() {
           <div>
             <h1>Schema migration loss gate</h1>
             <p className="lede">
-              Deterministic information preservation verification for database and data model transitions, executed by GenLayer consensus without subjective assumptions.
+              Deterministic information preservation verification for declared schema transitions, evaluated by GenLayer leader-validator consensus against a deterministic truth table before storing the outcome on-chain.
             </p>
           </div>
         </section>
@@ -459,7 +459,7 @@ function App() {
 
         <nav className="nav-anchor-bar" aria-label="Section shortcuts">
           <span>Jump to:</span>
-          <a href="#wallet" className="nav-anchor-link">Wallet & Network</a>
+          <a href="#wallet" className="nav-anchor-link">Wallet</a>
           <a href="#how-it-works" className="nav-anchor-link">How It Works</a>
           <a href="#create-case" className="nav-anchor-link">1. Create Case</a>
           <a href="#existing-cases" className="nav-anchor-link">2. Existing Cases</a>

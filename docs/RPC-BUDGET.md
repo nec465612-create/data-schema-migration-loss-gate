@@ -4,6 +4,36 @@
 
 This matrix is bound to the C3 Stage 2 frontend flow. It is a budget and test plan, not evidence of Studio traffic. The selected Studio account is recorded below; no Studio transaction has been sent.
 
+## Applicability
+
+RPC_BUDGET_REVISION: C3-STAGE2-FRONTEND-FLOW
+OFFICIAL_DOCS_CHECKED: STAGE2-AND-CURRENT-RUNTIME-BASELINE
+STUDIO_SCOPE: APPLICABLE
+FRONTEND_SCOPE: APPLICABLE
+
+## FRONTEND RPC BUDGET MATRIX
+
+FRONTEND_MATRIX_STATUS: COMPLETE
+MULTI_CLIENT_JUSTIFICATION: NOT_REQUIRED
+
+| Screen/workflow | Request source | RPC method | Trigger | Cache key / TTL | In-flight dedupe | Invalidation | Poll interval / attempts | Retry/backoff/cancel | Planned maximum | Transaction count | Terminal/readback condition |
+|---|---|---|---|---|---|---|---|---|---:|---:|---|
+| Initial landing | App render | none | Browser load | none | n/a | n/a | none | none | 0 | 0 | No chain request |
+| Wallet discovery and connect | Canonical wallet-session store | EIP-6963; eth_requestAccounts; eth_chainId | Explicit Discover wallets or Connect | none | One shared session | Account or chain event | none | User action only; teardown cancellation | 2 | 0 | Connected session or recoverable error |
+| Load case IDs | Shared read client | list_cases | Explicit Load IDs | chain/contract/list_cases/[1,4]; no cache | In-flight dedupe | Account/network/contract change | none | Bounded; cancel on teardown | 1 | 0 | Returned case IDs or recoverable error |
+| Open case detail | Shared read client | get_case | Explicit case selection | chain/contract/get_case/[id]; no cache | In-flight dedupe | Account/network/contract change | none | Bounded; cancel on teardown | 1 | 0 | Decoded case or recoverable error |
+| One write workflow | Write coordinator | create_schema_case/replace_schemas/lock_schemas/put_mapping/freeze_mapping/evaluate_migration | Explicit action button | No cache for consequential state | One journal intent and coordinator | After write/account/network change | 2/4/8s; up to 3 | Bounded Retry-After/backoff; cancel hidden or teardown | 6 | 1 | FINALIZED plus semantic SUCCESS and authoritative readback |
+| Retry after uncertainty | Retained journal | retry_migration only after reconciliation | Explicit retry action | No cache | One retained intent | After reconciliation | No automatic polling | No automatic retry or resubmit | 0 | 0 | Retained hash reconciled before a new intent |
+
+## FRONTEND RPC BUDGET EVIDENCE
+
+FRONTEND_EVIDENCE_STATUS: INCOMPLETE
+
+Live frontend measurement is not claimed before the later deployed E2E stage.
+
+| Screen/workflow | Request source/method | Actual requests | Cache hit/miss | In-flight dedupe | Poll attempts | Retry/delay | Invalidations | Readback calls | Actual transactions | Variance/result |
+|---|---|---:|---|---|---:|---|---|---:|---:|---|
+
 ## Frontend budget
 
 | User action | Allowed automatic chain/RPC work | Implementation boundary |
