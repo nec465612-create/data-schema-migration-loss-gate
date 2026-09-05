@@ -41,6 +41,10 @@ The mapping editor now initializes one row for every old field, supports adding 
 
 The frontend now treats an absent or mismatched chain as invalid, disables Create case until the configured chain is confirmed, and applies the same guard centrally in `writeAndVerify` before journal reservation or wallet signing. Connect and successful network switching update the bound chain; unavailable switch readback fails closed. `frontend/tests/network.test.ts` covers matching, case variation, mismatch, and missing chain IDs. This is a frontend-only correction at source commit `0f4ecfdafddac361f70d5630417704a451c6da9b`; the contract ABI, storage, and transaction envelope are unchanged.
 
+### F-005 wallet-session event binding
+
+The frontend now owns one wallet-session snapshot for account, chain, and `canWrite`, subscribes the selected provider to `accountsChanged`, `chainChanged`, and `disconnect`, rebinds the session client on valid account changes, clears write capability on wrong-chain events, and tears down listeners on disconnect or replacement. App controls subscribe to that snapshot, and a regression covers account rebinding, wrong-chain disablement, matching-chain recovery, listener teardown, and disconnect. This is a frontend-only correction at source commit `f0cce24ee0040998543820e064e460c60430a76a`; the contract ABI, storage, and transaction envelope are unchanged.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.
