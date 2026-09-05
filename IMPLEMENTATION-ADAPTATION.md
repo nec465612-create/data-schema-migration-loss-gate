@@ -43,7 +43,7 @@ The frontend now treats an absent or mismatched chain as invalid, disables Creat
 
 ### F-005 wallet-session event binding
 
-The frontend now owns one wallet-session snapshot for account, chain, and `canWrite`, subscribes the selected provider to `accountsChanged`, `chainChanged`, and `disconnect`, rebinds the session client on valid account changes, clears write capability on wrong-chain events, and tears down listeners on disconnect or replacement. App controls subscribe to that snapshot, and a regression covers account rebinding, wrong-chain disablement, matching-chain recovery, listener teardown, and disconnect. This is a frontend-only correction at source commit `f0cce24ee0040998543820e064e460c60430a76a`; the contract ABI, storage, and transaction envelope are unchanged.
+The frontend now owns one wallet-session snapshot for account, chain, and `canWrite`, subscribes the selected provider to `accountsChanged`, `chainChanged`, and `disconnect`, rebinds the session client on valid account changes, clears write capability on wrong-chain events, and tears down listeners on disconnect or replacement. Each write captures an immutable session/client/generation context; invalidation before signing removes the unsigned reservation, while invalidation after a hash preserves that hash and enters reconciliation. App controls subscribe to that snapshot, and regressions cover idle transitions, in-flight account replacement, wrong-chain disablement, matching-chain recovery, listener teardown, and disconnect. This is a frontend-only correction at source commit `7f4bde13173e9c80dc0a1a150be9e71fc1e6533b`; the contract ABI, storage, and transaction envelope are unchanged.
 
 ## Preserved binding requirements
 
