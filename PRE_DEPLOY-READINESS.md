@@ -37,6 +37,10 @@ This package is a local exact-revision candidate for anonymous PRE_DEPLOY review
 - `STUDIO_PHYSICAL_COUNT_CLAIM: NONE`
 - `STUDIO_E2E_STATUS: NOT_STARTED`
 
+## F-012 sequencing disposition
+
+The required matrix-before-Studio ordering was breached and is recorded explicitly. The read-only Studio page/probe occurred at `2026-09-06T02:01:17.3913691+07:00`; `2dc9d511d5f9e873526cb9aefb04655865b44013` at `2026-09-06T02:03:22+07:00` still had only the coarse Studio table; the complete numeric matrix was first committed at `2026-09-06T02:10:09+07:00` in `601efde0b7c7ff526c1c749d28ae5da5f40d1cc4`. The matrix content is complete, but this chronology is not retroactively compliant. The read-only probe is not Studio E2E/live evidence; no replay or redeploy will be used to repair it. PRE_DEPLOY and all further Studio actions remain blocked pending reviewer confirmation of this disposition/evidence-plan adjustment.
+
 ## Exact upstream package
 
 ```text
@@ -59,7 +63,7 @@ STAGE-2.md SHA-256:                  A44237E81EB8C9336F3AC74444BFE7972D2DF165377
 | Unsafe HTML scan | `rg -n "dangerouslySetInnerHTML|innerHTML|innerText|eval\\(" frontend/src frontend/tests` | No matches |
 | Journal key scan | `rg -n "glj1:.*operationFingerprint|operationFingerprint.*glj1:|key.*operationFingerprint" frontend/src frontend/tests` | No matches |
 | Studio capability probe | In-App Browser read-only probe on `https://studio.genlayer.com/contracts` | PASS; `OBSERVABLE_ACTION_LEDGER` locked; no physical-count claim |
-| Studio RPC matrix | `docs/RPC-BUDGET.md` exact-source review | PASS; numeric per-transition ceilings, terminal conditions, retry/cooldown, and expected transaction totals recorded |
+| Studio RPC matrix | `docs/RPC-BUDGET.md` exact-source review | CONTENT COMPLETE; sequencing breach recorded; PRE_DEPLOY/Studio action remains blocked pending disposition |
 
 The frontend unit result includes journal integrity, caller-fingerprint validation, finalized-status/historical-readback reconciliation, mixed-context quarantine, export-before-archive enforcement, quota, hidden-tab polling pause, cancellation teardown, bounded transient receipt retry, and all required transaction-progress phase vocabulary checks. The browser smoke suite confirms no startup RPC request, disabled signing until journal initialization is healthy, and reload restoration of a retained journal entry with archive locked until export.
 
@@ -127,7 +131,7 @@ docs/STUDIO-E2E-PLAN.md
 
 ## Required review/deployment boundary
 
-No deployment, signature, contract write, GitHub publication, Vercel publication, or live Studio claim is authorized by this document. The selected Studio account, pre-E2E measurement mode, and numeric Studio matrix are recorded, but PRE_DEPLOY approval, deployment, and live evidence remain open. The next gate is one current anonymous PRE_DEPLOY review bound to the final exact source revision and this package. The old reviewer route in the pasted handoff is for a different project and must not be used.
+No deployment, signature, contract write, GitHub publication, Vercel publication, or live Studio claim is authorized by this document. The selected Studio account, pre-E2E measurement mode, and numeric Studio matrix are recorded, but the matrix-before-opening sequencing breach requires reviewer-confirmed disposition; PRE_DEPLOY approval, deployment, and live evidence remain open. The next gate is one current anonymous PRE_DEPLOY review bound to the final exact source revision and this package. The old reviewer route in the pasted handoff is for a different project and must not be used.
 
 ## Later Studio E2E plan
 

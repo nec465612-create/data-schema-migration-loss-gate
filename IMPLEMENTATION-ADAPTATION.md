@@ -73,6 +73,8 @@ The primary AI selected the currently accessible Studio account `0xeF5D2119416A2
 
 `docs/RPC-BUDGET.md` now contains the locked `STUDIO RPC BUDGET MATRIX` for `OBSERVABLE_ACTION_LEDGER`: every unique write has explicit submission, maximum three status-poll attempts at bounded 2/4/8-second slots, one terminal receipt read, authoritative readback count, retry/cooldown rule, maximum observable call total, and transaction count. Create has two authoritative reads (`get_id_by_nonce` plus `get_version`); wrong-actor, stale-revision, and too-early-cooldown controls include pre/post unchanged-state reads; transient errors consume existing poll slots with bounded backoff and no blind retry. No Studio row has been executed.
 
+The matrix-before-opening sequencing breach is recorded: the read-only Studio probe occurred at `2026-09-06T02:01:17.3913691+07:00`, the account/probe documentation commit at `2026-09-06T02:03:22+07:00` still had the coarse table, and the complete matrix was first committed at `2026-09-06T02:10:09+07:00`. This is not retroactively compliant; the probe is not E2E evidence, no replay/redeploy is permitted, and further Studio action remains blocked pending reviewer-confirmed disposition. This is a documentation-only correction at package commit `601efde0b7c7ff526c1c749d28ae5da5f40d1cc4`.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.

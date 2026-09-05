@@ -62,6 +62,21 @@ Terminal success requires `FINALIZED`, semantic execution success, consensus/fin
 
 No Studio row is claimed as executed yet. The future ledger must record each listed action, poll attempt, terminal receipt, authoritative read, transaction hash, duplicate-transaction count, retry, and matrix variance without converting these ceilings into a physical-request count.
 
+## F-012 sequencing disposition
+
+The required pre-opening order was breached and is recorded rather than treated as retroactively satisfied. The read-only Studio page/probe occurred at `2026-09-06T02:01:17.3913691+07:00`; commit `2dc9d511d5f9e873526cb9aefb04655865b44013` at `2026-09-06T02:03:22+07:00` still contained only the coarse Studio table; the complete numeric matrix was first committed at `2026-09-06T02:10:09+07:00` in `601efde0b7c7ff526c1c749d28ae5da5f40d1cc4`. This is an ordering breach, not live Studio evidence.
+
+```text
+STUDIO_MATRIX_CONTENT: COMPLETE
+STUDIO_MATRIX_LOCK_TIMING: AFTER_READ_ONLY_PROBE
+STUDIO_SEQUENCE_BREACH: RECORDED
+STUDIO_E2E_AUTHORIZATION: BLOCKED_PENDING_REVIEWER_DISPOSITION
+STUDIO_FURTHER_ACTION: NONE
+STUDIO_REPLAY_OR_REDEPLOY_FOR_MEASUREMENT: FORBIDDEN
+```
+
+Disposition: retain the account/probe as read-only setup evidence, make no retrospective compliance claim, do not replay or redeploy to repair the chronology, and keep PRE_DEPLOY and every further Studio action blocked until the retained anonymous reviewer confirms this disposition/evidence-plan adjustment.
+
 ## Acceptance boundary
 
 Before PRE_DEPLOY can be approved, this matrix must be reviewed against the exact source revision, a Studio account must be locked, and the current anonymous reviewer must return the mandated literal verdict. Local tests do not satisfy those live/account/reviewer requirements.
