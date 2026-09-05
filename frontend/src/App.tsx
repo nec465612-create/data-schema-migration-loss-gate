@@ -47,7 +47,7 @@ function parseJson(text: string, label: string): any {
 }
 
 function recordPhase(record: Record<string, any> | null): string {
-  return record?.phase ?? "—";
+  return record?.phase ?? "None";
 }
 
 function TransactionProgress({ progress, onReconcile }: { progress: WriteProgress; onReconcile: () => void }) {
@@ -78,9 +78,19 @@ function TransactionProgress({ progress, onReconcile }: { progress: WriteProgres
         <span className="transaction-progress__phase">{progress.phase}</span>
       </div>
       <p>{progress.message || copy.detail}</p>
-      {progress.hash && <div className="transaction-progress__hash"><code>{progress.hash}</code><button type="button" className="quiet-button" onClick={copyHash}>Copy hash</button>{copyState && <span className="muted">{copyState}</span>}</div>}
-      {progress.phase === "RECONCILIATION_REQUIRED" && <p className="transaction-progress__warning">Do not submit this operation again until the retained hash and journal record are reconciled.</p>}
-      {progress.phase === "RECONCILIATION_REQUIRED" && <button type="button" className="quiet-button" onClick={onReconcile}>Rebuild local journal</button>}
+      {progress.hash && (
+        <div className="transaction-progress__hash">
+          <code>{progress.hash}</code>
+          <button type="button" className="quiet-button" onClick={copyHash}>Copy hash</button>
+          {copyState && <span className="muted">{copyState}</span>}
+        </div>
+      )}
+      {progress.phase === "RECONCILIATION_REQUIRED" && (
+        <p className="transaction-progress__warning">Do not submit this operation again until the retained hash and journal record are reconciled.</p>
+      )}
+      {progress.phase === "RECONCILIATION_REQUIRED" && (
+        <button type="button" className="quiet-button" onClick={onReconcile}>Rebuild local journal</button>
+      )}
     </section>
   );
 }
@@ -97,20 +107,73 @@ function SchemaTable({ title, fields, setFields }: { title: string; fields: Fiel
       </div>
       <div className="scroll-table">
         <table>
-          <thead><tr><th>ID</th><th>Type</th><th>Required</th><th>Meaning</th><th>ENUM values</th><th aria-label="Remove" /></tr></thead>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Type</th>
+              <th>Required</th>
+              <th>Meaning</th>
+              <th>ENUM values</th>
+              <th aria-label="Remove" />
+            </tr>
+          </thead>
           <tbody>
             {fields.map((field, index) => (
               <tr key={`${title}-${index}`}>
-                <td><input value={field.id} onChange={(event) => update(index, { id: event.target.value })} aria-label={`${title} field ${index + 1} ID`} /></td>
                 <td>
-                  <select value={field.type} onChange={(event) => update(index, { type: event.target.value as FieldType, values: event.target.value === "ENUM" ? field.values : [] })}>
+                  <input
+                    value={field.id}
+                    onChange={(event) => update(index, { id: event.target.value })}
+                    aria-label={`${title} field ${index + 1} ID`}
+                  />
+                </td>
+                <td>
+                  <select
+                    value={field.type}
+                    aria-label={`${title} field ${index + 1} type`}
+                    onChange={(event) => update(index, { type: event.target.value as FieldType, values: event.target.value === "ENUM" ? field.values : [] })}
+                  >
                     {(["TEXT", "INT", "BOOL", "ENUM"] as FieldType[]).map((type) => <option key={type}>{type}</option>)}
                   </select>
                 </td>
-                <td><label className="checkbox-label"><input type="checkbox" checked={field.required} onChange={(event) => update(index, { required: event.target.checked })} /> yes</label></td>
-                <td><input value={field.meaning} onChange={(event) => update(index, { meaning: event.target.value })} aria-label={`${title} field ${index + 1} meaning`} /></td>
-                <td><input disabled={field.type !== "ENUM"} value={field.values.join(",")} onChange={(event) => update(index, { values: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} placeholder="A,B" /></td>
-                <td><button type="button" className="icon-button" disabled={fields.length === 1} onClick={() => setFields(fields.filter((_field, item) => item !== index))} aria-label={`Remove ${title} field ${index + 1}`}>×</button></td>
+                <td>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={field.required}
+                      onChange={(event) => update(index, { required: event.target.checked })}
+                      aria-label={`${title} field ${index + 1} required`}
+                    />
+                    yes
+                  </label>
+                </td>
+                <td>
+                  <input
+                    value={field.meaning}
+                    onChange={(event) => update(index, { meaning: event.target.value })}
+                    aria-label={`${title} field ${index + 1} meaning`}
+                  />
+                </td>
+                <td>
+                  <input
+                    disabled={field.type !== "ENUM"}
+                    value={field.values.join(",")}
+                    onChange={(event) => update(index, { values: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })}
+                    placeholder="A,B"
+                    aria-label={`${title} field ${index + 1} ENUM values`}
+                  />
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    disabled={fields.length === 1}
+                    onClick={() => setFields(fields.filter((_field, item) => item !== index))}
+                    aria-label={`Remove ${title} field ${index + 1}`}
+                  >
+                    ×
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -354,110 +417,480 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">C3 · public evidence gate</p>
-          <h1>Schema migration loss gate</h1>
-          <p className="lede">Freeze an old/new schema pair, submit an explicit mapping, and get a deterministic LOSSLESS or LOSS_FOUND result.</p>
-        </div>
-        <div className={`chain-badge ${onCorrectChain ? "good" : "warn"}`}>
-          <span className="status-dot" />
-          {connection ? (onCorrectChain ? `Connected · ${currentChainName()}` : "Wrong wallet chain") : "Disconnected"}
-        </div>
-      </header>
-
-      <section className="notice warning">
-        <strong>Public-data warning</strong>
-        <span>All submitted text will be public and permanent. Do not include private information, credentials or personal records.</span>
-      </section>
-      <p className="scope-copy">Assessment of this exact submitted material only; not verification of external facts.</p>
-
-      <section className="panel wallet-panel" aria-labelledby="wallet-heading">
-        <div className="section-heading"><h2 id="wallet-heading">Wallet and network</h2><span className="muted">Allowlist: MetaMask · OKX · Rabby</span></div>
-        <div className="toolbar">
-          <button type="button" onClick={findWallets}>Discover wallets</button>
-          <select value={selectedWallet} onChange={(event) => setSelectedWallet(event.target.value)} aria-label="Wallet provider">
-            <option value="">Select provider</option>
-            {wallets.map((wallet) => <option key={wallet.id} value={wallet.id}>{wallet.name}</option>)}
-          </select>
-          <button type="button" onClick={connect} disabled={!selectedWallet}>Connect</button>
-          {connection && !onCorrectChain && <button type="button" className="quiet-button" onClick={switchNetwork}>Switch to {currentChainName()}</button>}
-          {connection && <button type="button" className="quiet-button" onClick={() => { disconnectWallet(); setMessage("Wallet disconnected."); }}>Disconnect</button>}
-        </div>
-        <p className="muted">Expected chain ID: {expectedChainId()} · account: {account ?? "—"}</p>
-      </section>
-
-      <section className="panel journal-panel" aria-labelledby="journal-heading">
-        <div className="section-heading">
-          <div><h2 id="journal-heading">Recovery journal</h2><p className="muted">Read-only retained transaction context. Export a record before archiving it.</p></div>
-          <button type="button" className="quiet-button" onClick={() => void reconcileJournal()}>Reconcile stored context</button>
-        </div>
-        {journal.length === 0 ? <p className="muted">No retained transaction records.</p> : <div className="journal-list">
-          {journal.map((record) => <article className="journal-entry" data-journal-reservation={record.reservation} key={record.reservation}>
-            <div className="detail-header"><div><p className="eyebrow">{record.method}</p><h3>{record.status}</h3></div><code>{record.tx_hash || "No transaction hash"}</code></div>
-            {record.status === "QUARANTINED" && <p className="journal-quarantine">Stored chain or contract differs from this runtime. This record is preserved for export and must be reconciled in its original environment.</p>}
-            <dl className="facts journal-facts">
-              <div><dt>Chain</dt><dd>{record.chain}</dd></div><div><dt>Contract</dt><dd>{record.contract}</dd></div><div><dt>Account</dt><dd>{record.account}</dd></div><div><dt>Intent</dt><dd>{record.intent}</dd></div>
-              <div><dt>Pre revision</dt><dd>{record.pre_revision}</dd></div><div><dt>Pre-state hash</dt><dd>{record.pre_hash}</dd></div>
-            </dl>
-            <details><summary>Stored arguments</summary><pre className="record-view">{record.args_json}</pre></details>
-            {journalReadbacks[record.reservation] && <details open><summary>Authoritative readback</summary><pre className="record-view">{journalReadbacks[record.reservation]}</pre></details>}
-            <div className="toolbar journal-actions">
-              <button type="button" className="quiet-button" onClick={() => exportJournal(record)}>Export JSON</button>
-              <button type="button" className="quiet-button" onClick={() => void reconcileJournalRecord(record).then((result) => { setJournal((current) => current.map((item) => item.reservation === result.record.reservation ? result.record : item)); if (result.readback !== null) setJournalReadbacks((current) => ({ ...current, [result.record.reservation]: result.readback as string })); setMessage(result.detail); }).catch((caught) => setError(String(caught)))}>Reconcile record</button>
-              <button type="button" className="quiet-button" disabled={!journalExported[record.reservation] || !["VERIFIED", "FINALIZED_ERROR"].includes(record.status)} onClick={() => void archiveExportedJournal(record)}>Archive after export</button>
+    <>
+      <a href="#main-content" className="skip-link">Skip to main workstation</a>
+      <main className="app-shell" id="main-content">
+        <header className="header-row">
+          <div className="brand-unit">
+            <div className="brand-mark" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h4v6H4z" />
+                <path d="M16 4h4v6h-4z" />
+                <path d="M6 10v3l4 3" />
+                <path d="M18 10v3l-4 3" />
+                <path d="M9 19l2 2 4-4" />
+              </svg>
             </div>
-          </article>)}
-        </div>}
-      </section>
-
-      <section className="panel" aria-labelledby="create-heading">
-        <div className="section-heading"><h2 id="create-heading">1. Create schema case</h2><span className="muted">Primary owns the schemas · mapper supplies the mapping</span></div>
-        <div className="form-grid compact">
-          <label>Creator nonce<input value={nonce} onChange={(event) => setNonce(event.target.value)} maxLength={32} /></label>
-          <label>Mapper address<input value={mapper} onChange={(event) => setMapper(event.target.value)} placeholder="0x…" /></label>
-        </div>
-        <div className="schema-grid"><SchemaTable title="old" fields={oldFields} setFields={setOldFields} /><SchemaTable title="new" fields={newFields} setFields={setNewFields} /></div>
-        <button type="button" onClick={() => run({
-          method: "create_schema_case",
-          args: [nonce, mapper.trim(), JSON.stringify(basePayload), 0n],
-          argsForHash: [nonce, mapper.trim().toLowerCase(), basePayload, "0"],
-          intent: `create:${(account ?? "").toLowerCase()}:${nonce}`,
-          preRevision: "0",
-          preHash: "null",
-          creator: account ?? "",
-          nonce,
-          verify: (record) => record.phase === "BASE_DRAFT" && record.revision === "1",
-        })} disabled={busy || !journalReady || !account || !canWrite || !config.contractAddress}>Create case</button>
-      </section>
-
-      <section className="panel" aria-labelledby="cases-heading">
-        <div className="section-heading"><h2 id="cases-heading">2. Existing cases</h2><button type="button" className="quiet-button" onClick={loadCases}>Load IDs</button></div>
-        <div className="case-list">{caseIds.length ? caseIds.map((id) => <button type="button" key={id} className={id === caseId ? "case-chip selected" : "case-chip"} onClick={() => openCase(id)}>Case {id}</button>) : <span className="muted">No IDs loaded.</span>}</div>
-        {caseRecord && <div className="case-detail">
-          <div className="detail-header"><div><p className="eyebrow">Case {caseId}</p><h3>{recordPhase(caseRecord)} · revision {caseRecord.revision}</h3></div><span className={`outcome ${caseRecord.outcome ? "has-value" : ""}`}>{caseRecord.outcome || "Awaiting evaluation"}</span></div>
-          <dl className="facts"><div><dt>Primary</dt><dd>{caseRecord.primary}</dd></div><div><dt>Mapper</dt><dd>{caseRecord.secondary}</dd></div><div><dt>Attempts</dt><dd>{caseRecord.accepted_attempts}</dd></div><div><dt>Last operation</dt><dd>{caseRecord.last_operation?.method}</dd></div></dl>
-          <div className="schema-grid"><SchemaTable title="case-old" fields={oldFields} setFields={setOldFields} /><SchemaTable title="case-new" fields={newFields} setFields={setNewFields} /></div>
-          <section className="table-card"><div className="section-heading"><h3>Mapping rows</h3><div className="toolbar"><button type="button" className="quiet-button" onClick={addMappingRow} disabled={mappingRows.length >= MAX_MAPPING_ROWS || !nextUnmappedOldId(oldFields.map((field) => field.id), mappingRows)}>Add mapping row</button><button type="button" className="quiet-button" onClick={() => setDefaults([...defaults, { new_id: "", value: "" }])}>Add default</button></div></div>
-            <div className="scroll-table"><table><thead><tr><th>Old ID</th><th>New ID</th><th>Transform</th></tr></thead><tbody>{mappingRows.map((row, index) => <tr key={`${row.old_id}-${index}`}><td><select value={row.old_id} aria-label={`Mapping row ${index + 1} old field`} onChange={(event) => setMappingRows(mappingRows.map((item, itemIndex) => itemIndex === index ? { ...item, old_id: event.target.value } : item))}><option value="">Select old field</option>{oldFields.map((field, fieldIndex) => <option key={`${field.id}-${fieldIndex}`} value={field.id} disabled={mappingRows.some((item, itemIndex) => itemIndex !== index && item.old_id === field.id)}>{field.id}</option>)}</select></td><td><select value={row.new_id} disabled={row.transform === "DROP"} aria-label={`Mapping row ${index + 1} new field`} onChange={(event) => setMappingRows(mappingRows.map((item, itemIndex) => itemIndex === index ? { ...item, new_id: event.target.value } : item))}><option value="">No target (DROP)</option>{newFields.map((field, fieldIndex) => <option key={`${field.id}-${fieldIndex}`} value={field.id} disabled={!isTargetAvailable(mappingRows, index, field.id)}>{field.id}</option>)}</select></td><td><select value={row.transform} aria-label={`Mapping row ${index + 1} transform`} onChange={(event) => setMappingRows(mappingRows.map((item, itemIndex) => itemIndex === index ? { ...item, transform: event.target.value as MappingRow["transform"], new_id: event.target.value === "DROP" ? "" : item.new_id } : item))}>{(["IDENTITY", "RENAME", "CAST", "DROP"] as MappingRow["transform"][]).map((transform) => <option key={transform}>{transform}</option>)}</select></td></tr>)}</tbody></table></div>
-            {!!defaults.length && <div className="defaults-list">{defaults.map((item, index) => <div className="default-row" key={index}><input value={item.new_id} placeholder="new_id" onChange={(event) => setDefaults(defaults.map((row, rowIndex) => rowIndex === index ? { ...row, new_id: event.target.value } : row))} /><input value={item.value} placeholder="default value" onChange={(event) => setDefaults(defaults.map((row, rowIndex) => rowIndex === index ? { ...row, value: event.target.value } : row))} /><button type="button" className="icon-button" onClick={() => setDefaults(defaults.filter((_row, rowIndex) => rowIndex !== index))}>×</button></div>)}</div>}
-          </section>
-          <div className="action-row">
-            <button type="button" onClick={() => run(baseRequest())} disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "BASE_DRAFT"}>Replace schemas</button>
-            <button type="button" onClick={() => run(caseRequest("lock_schemas", (record) => record.phase === "BASE_LOCKED"))} disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "BASE_DRAFT"}>Lock schemas</button>
-            <button type="button" onClick={() => run(putRequest())} disabled={busy || !journalReady || !canWrite || !["BASE_LOCKED", "RESPONSE_DRAFT"].includes(caseRecord.phase)}>Put mapping</button>
-            <button type="button" onClick={() => run(caseRequest("freeze_mapping", (record) => record.phase === "FROZEN"))} disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "RESPONSE_DRAFT"}>Freeze mapping</button>
-            <button type="button" onClick={() => run(caseRequest("evaluate_migration", (record) => ["DONE", "UNRESOLVED"].includes(record.phase)))} disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "FROZEN"}>Evaluate</button>
-            <button type="button" onClick={() => run(caseRequest("retry_migration", (record) => ["UNRESOLVED", "EXHAUSTED", "DONE"].includes(record.phase)))} disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "UNRESOLVED"}>Retry</button>
+            <div>
+              <span className="brand-label">GenLayer Evidence Workstation</span>
+              <p className="eyebrow">C3 · Public Evidence Gate</p>
+            </div>
           </div>
-          <pre className="record-view">{JSON.stringify(caseRecord, null, 2)}</pre>
-        </div>}
-      </section>
+          <div className={`chain-badge ${onCorrectChain ? "good" : "warn"}`}>
+            <span className="status-dot" />
+            {connection ? (onCorrectChain ? `Connected · ${currentChainName()}` : "Wrong wallet chain") : "Disconnected"}
+          </div>
+        </header>
 
-      <TransactionProgress progress={progress} onReconcile={() => void reconcileJournal()} />
-      <div className="status-line" role="status">{busy ? "Writing, finalizing, and reconciling exact historical state…" : message}{error && <span className="error-text">{error}</span>}</div>
-    </main>
+        <section className="hero" id="overview">
+          <div>
+            <h1>Schema migration loss gate</h1>
+            <p className="lede">
+              Deterministic information preservation verification for database and data model transitions, executed by GenLayer consensus without subjective assumptions.
+            </p>
+          </div>
+        </section>
+
+        <section className="notice warning" role="region" aria-label="Public data disclosure">
+          <strong>Public-data warning</strong>
+          <span>All submitted text will be public and permanent. Do not include private information, credentials or personal records.</span>
+        </section>
+        <p className="scope-copy">Assessment of this exact submitted material only; not verification of external facts.</p>
+
+        <nav className="nav-anchor-bar" aria-label="Section shortcuts">
+          <span>Jump to:</span>
+          <a href="#wallet" className="nav-anchor-link">Wallet & Network</a>
+          <a href="#how-it-works" className="nav-anchor-link">How It Works</a>
+          <a href="#create-case" className="nav-anchor-link">1. Create Case</a>
+          <a href="#existing-cases" className="nav-anchor-link">2. Existing Cases</a>
+          <a href="#recovery-journal" className="nav-anchor-link">Recovery Journal</a>
+        </nav>
+
+        <section className="panel docs-panel" id="how-it-works" aria-labelledby="docs-heading">
+          <div className="section-heading">
+            <div>
+              <h2 id="docs-heading">Workstation guide & how it works</h2>
+              <p className="muted">Public evidence lifecycle, actor responsibilities, and deterministic evaluation rules</p>
+            </div>
+            <span className="actor-badge evaluator">Independent Consensus</span>
+          </div>
+
+          <div className="docs-grid">
+            <article className="docs-card">
+              <h3>1. Core Evaluation Question</h3>
+              <p>
+                Does an explicit mapping from a declared Old Schema to a declared New Schema preserve all existing information? GenLayer intelligent contract execution coordinates leader-validator consensus to evaluate the frozen mapping against an immutable truth table before storing the outcome on-chain.
+              </p>
+            </article>
+
+            <article className="docs-card">
+              <h3>2. Legible Public Actors</h3>
+              <p>
+                <strong>Schema Owner:</strong> Declares, edits, and locks the Old and New schema definitions.<br />
+                <strong>Mapper:</strong> Supplies transformation rules (IDENTITY, RENAME, CAST, DROP) and defaults.<br />
+                <strong>Evaluator:</strong> Triggers GenLayer consensus evaluation or retries after cooldown.
+              </p>
+            </article>
+
+            <article className="docs-card">
+              <h3>3. Case Lifecycle & Revisions</h3>
+              <p>
+                <strong>BASE_DRAFT:</strong> Schema Owner drafts Old and New fields.<br />
+                <strong>BASE_LOCKED:</strong> Schemas are sealed; mapper provides field transformations.<br />
+                <strong>RESPONSE_DRAFT:</strong> Mapping rows and defaults are drafted.<br />
+                <strong>FROZEN:</strong> Sealed mapping ready for consensus evaluation.
+              </p>
+            </article>
+          </div>
+
+          <div className="docs-table-wrapper">
+            <table className="docs-rule-table">
+              <thead>
+                <tr>
+                  <th>Transform Type</th>
+                  <th>Requirements for Preservation</th>
+                  <th>Default Preservation Outcome</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>IDENTITY</code></td>
+                  <td>Identical ID, identical type. ENUM new values must be a superset of old values.</td>
+                  <td><span className="docs-badge lossless">LOSSLESS</span> if types and ENUMs align</td>
+                </tr>
+                <tr>
+                  <td><code>RENAME</code></td>
+                  <td>Distinct new ID, identical type. ENUM new values must be a superset of old values.</td>
+                  <td><span className="docs-badge lossless">LOSSLESS</span> if types and ENUMs align</td>
+                </tr>
+                <tr>
+                  <td><code>CAST</code></td>
+                  <td>Allowed only for ENUM to TEXT, ENUM to ENUM superset, or identical types.</td>
+                  <td><span className="docs-badge loss">LOSS_FOUND</span> on invalid cast</td>
+                </tr>
+                <tr>
+                  <td><code>DROP</code></td>
+                  <td>Discards the old field. Permitted only with SKIP_DROP semantic tag.</td>
+                  <td><span className="docs-badge loss">LOSS_FOUND</span> unconditionally</td>
+                </tr>
+                <tr>
+                  <td><code>DEFAULTS</code></td>
+                  <td>Applies only to unmapped required new fields. Cannot restore dropped old fields.</td>
+                  <td>Required if new field has no mapping</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="panel wallet-panel" id="wallet" aria-labelledby="wallet-heading">
+          <div className="section-heading">
+            <div>
+              <h2 id="wallet-heading">Wallet and network</h2>
+              <p className="muted">EIP-6963 provider discovery and session binding</p>
+            </div>
+            <span className="muted">Allowlist: MetaMask · OKX · Rabby</span>
+          </div>
+          <div className="toolbar">
+            <button type="button" onClick={findWallets}>Discover wallets</button>
+            <select value={selectedWallet} onChange={(event) => setSelectedWallet(event.target.value)} aria-label="Wallet provider">
+              <option value="">Select provider</option>
+              {wallets.map((wallet) => <option key={wallet.id} value={wallet.id}>{wallet.name}</option>)}
+            </select>
+            <button type="button" onClick={connect} disabled={!selectedWallet}>Connect</button>
+            {connection && !onCorrectChain && <button type="button" className="quiet-button" onClick={switchNetwork}>Switch to {currentChainName()}</button>}
+            {connection && <button type="button" className="quiet-button" onClick={() => { disconnectWallet(); setMessage("Wallet disconnected."); }}>Disconnect</button>}
+          </div>
+          <p className="muted">Expected chain ID: {expectedChainId()} · account: {account ?? "None"}</p>
+        </section>
+
+        <section className="panel journal-panel" id="recovery-journal" aria-labelledby="journal-heading">
+          <div className="section-heading">
+            <div>
+              <h2 id="journal-heading">Recovery journal</h2>
+              <p className="muted">Read-only retained transaction context. Export a record before archiving it.</p>
+            </div>
+            <button type="button" className="quiet-button" onClick={() => void reconcileJournal()}>Reconcile stored context</button>
+          </div>
+          {journal.length === 0 ? (
+            <p className="muted">No retained transaction records.</p>
+          ) : (
+            <div className="journal-list">
+              {journal.map((record) => (
+                <article className="journal-entry" data-journal-reservation={record.reservation} key={record.reservation}>
+                  <div className="detail-header">
+                    <div>
+                      <p className="eyebrow">{record.method}</p>
+                      <h3>{record.status}</h3>
+                    </div>
+                    <code>{record.tx_hash || "No transaction hash"}</code>
+                  </div>
+                  {record.status === "QUARANTINED" && (
+                    <p className="journal-quarantine">
+                      Stored chain or contract differs from this runtime. This record is preserved for export and must be reconciled in its original environment.
+                    </p>
+                  )}
+                  <dl className="facts journal-facts">
+                    <div><dt>Chain</dt><dd>{record.chain}</dd></div>
+                    <div><dt>Contract</dt><dd>{record.contract}</dd></div>
+                    <div><dt>Account</dt><dd>{record.account}</dd></div>
+                    <div><dt>Intent</dt><dd>{record.intent}</dd></div>
+                    <div><dt>Pre revision</dt><dd>{record.pre_revision}</dd></div>
+                    <div><dt>Pre-state hash</dt><dd>{record.pre_hash}</dd></div>
+                  </dl>
+                  <details>
+                    <summary>Stored arguments</summary>
+                    <pre className="record-view">{record.args_json}</pre>
+                  </details>
+                  {journalReadbacks[record.reservation] && (
+                    <details open>
+                      <summary>Authoritative readback</summary>
+                      <pre className="record-view">{journalReadbacks[record.reservation]}</pre>
+                    </details>
+                  )}
+                  <div className="toolbar journal-actions">
+                    <button type="button" className="quiet-button" onClick={() => exportJournal(record)}>Export JSON</button>
+                    <button
+                      type="button"
+                      className="quiet-button"
+                      onClick={() => void reconcileJournalRecord(record).then((result) => {
+                        setJournal((current) => current.map((item) => item.reservation === result.record.reservation ? result.record : item));
+                        if (result.readback !== null) setJournalReadbacks((current) => ({ ...current, [result.record.reservation]: result.readback as string }));
+                        setMessage(result.detail);
+                      }).catch((caught) => setError(String(caught)))}
+                    >
+                      Reconcile record
+                    </button>
+                    <button
+                      type="button"
+                      className="quiet-button"
+                      disabled={!journalExported[record.reservation] || !["VERIFIED", "FINALIZED_ERROR"].includes(record.status)}
+                      onClick={() => void archiveExportedJournal(record)}
+                    >
+                      Archive after export
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="panel" id="create-case" aria-labelledby="create-heading">
+          <div className="section-heading">
+            <div>
+              <h2 id="create-heading">1. Create schema case</h2>
+              <p className="muted">Primary owns the schemas · mapper supplies the mapping</p>
+            </div>
+            <span className="actor-badge owner">Schema Owner</span>
+          </div>
+          <div className="form-grid compact">
+            <label>Creator nonce<input value={nonce} onChange={(event) => setNonce(event.target.value)} maxLength={32} /></label>
+            <label>Mapper address<input value={mapper} onChange={(event) => setMapper(event.target.value)} placeholder="0x…" /></label>
+          </div>
+          <div className="schema-grid">
+            <SchemaTable title="old" fields={oldFields} setFields={setOldFields} />
+            <SchemaTable title="new" fields={newFields} setFields={setNewFields} />
+          </div>
+          <button
+            type="button"
+            onClick={() => run({
+              method: "create_schema_case",
+              args: [nonce, mapper.trim(), JSON.stringify(basePayload), 0n],
+              argsForHash: [nonce, mapper.trim().toLowerCase(), basePayload, "0"],
+              intent: `create:${(account ?? "").toLowerCase()}:${nonce}`,
+              preRevision: "0",
+              preHash: "null",
+              creator: account ?? "",
+              nonce,
+              verify: (record) => record.phase === "BASE_DRAFT" && record.revision === "1",
+            })}
+            disabled={busy || !journalReady || !account || !canWrite || !config.contractAddress}
+          >
+            Create case
+          </button>
+        </section>
+
+        <section className="panel" id="existing-cases" aria-labelledby="cases-heading">
+          <div className="section-heading">
+            <div>
+              <h2 id="cases-heading">2. Existing cases</h2>
+              <p className="muted">Inspect, configure, and evaluate frozen migration cases</p>
+            </div>
+            <div className="toolbar">
+              <span className="actor-badge mapper">Mapper & Evaluator</span>
+              <button type="button" className="quiet-button" onClick={loadCases}>Load IDs</button>
+            </div>
+          </div>
+          <div className="case-list">
+            {caseIds.length ? (
+              caseIds.map((id) => (
+                <button
+                  type="button"
+                  key={id}
+                  className={id === caseId ? "case-chip selected" : "case-chip"}
+                  onClick={() => openCase(id)}
+                >
+                  Case {id}
+                </button>
+              ))
+            ) : (
+              <span className="muted">No IDs loaded.</span>
+            )}
+          </div>
+          {caseRecord && (
+            <div className="case-detail">
+              <div className="detail-header">
+                <div>
+                  <p className="eyebrow">Case {caseId}</p>
+                  <h3>{recordPhase(caseRecord)} · revision {caseRecord.revision}</h3>
+                </div>
+                <span className={`outcome ${caseRecord.outcome ? (caseRecord.outcome === "LOSS_FOUND" ? "is-loss" : (caseRecord.outcome === "UNRESOLVED" ? "is-unresolved" : "has-value")) : ""}`}>
+                  {caseRecord.outcome || "Awaiting evaluation"}
+                </span>
+              </div>
+              <dl className="facts">
+                <div><dt>Primary</dt><dd>{caseRecord.primary}</dd></div>
+                <div><dt>Mapper</dt><dd>{caseRecord.secondary}</dd></div>
+                <div><dt>Attempts</dt><dd>{caseRecord.accepted_attempts}</dd></div>
+                <div><dt>Last operation</dt><dd>{caseRecord.last_operation?.method ?? "None"}</dd></div>
+              </dl>
+              <div className="schema-grid">
+                <SchemaTable title="case-old" fields={oldFields} setFields={setOldFields} />
+                <SchemaTable title="case-new" fields={newFields} setFields={setNewFields} />
+              </div>
+              <section className="table-card">
+                <div className="section-heading">
+                  <div>
+                    <h3>Mapping rows</h3>
+                    <p className="muted">Transform rules for each old schema field</p>
+                  </div>
+                  <div className="toolbar">
+                    <button
+                      type="button"
+                      className="quiet-button"
+                      onClick={addMappingRow}
+                      disabled={mappingRows.length >= MAX_MAPPING_ROWS || !nextUnmappedOldId(oldFields.map((field) => field.id), mappingRows)}
+                    >
+                      Add mapping row
+                    </button>
+                    <button
+                      type="button"
+                      className="quiet-button"
+                      onClick={() => setDefaults([...defaults, { new_id: "", value: "" }])}
+                    >
+                      Add default
+                    </button>
+                  </div>
+                </div>
+                <div className="scroll-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Old ID</th>
+                        <th>New ID</th>
+                        <th>Transform</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mappingRows.map((row, index) => (
+                        <tr key={`${row.old_id}-${index}`}>
+                          <td>
+                            <select
+                              value={row.old_id}
+                              aria-label={`Mapping row ${index + 1} old field`}
+                              onChange={(event) => setMappingRows(mappingRows.map((item, itemIndex) => itemIndex === index ? { ...item, old_id: event.target.value } : item))}
+                            >
+                              <option value="">Select old field</option>
+                              {oldFields.map((field, fieldIndex) => (
+                                <option
+                                  key={`${field.id}-${fieldIndex}`}
+                                  value={field.id}
+                                  disabled={mappingRows.some((item, itemIndex) => itemIndex !== index && item.old_id === field.id)}
+                                >
+                                  {field.id}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td>
+                            <select
+                              value={row.new_id}
+                              disabled={row.transform === "DROP"}
+                              aria-label={`Mapping row ${index + 1} new field`}
+                              onChange={(event) => setMappingRows(mappingRows.map((item, itemIndex) => itemIndex === index ? { ...item, new_id: event.target.value } : item))}
+                            >
+                              <option value="">No target (DROP)</option>
+                              {newFields.map((field, fieldIndex) => (
+                                <option
+                                  key={`${field.id}-${fieldIndex}`}
+                                  value={field.id}
+                                  disabled={!isTargetAvailable(mappingRows, index, field.id)}
+                                >
+                                  {field.id}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td>
+                            <select
+                              value={row.transform}
+                              aria-label={`Mapping row ${index + 1} transform`}
+                              onChange={(event) => setMappingRows(mappingRows.map((item, itemIndex) => itemIndex === index ? { ...item, transform: event.target.value as MappingRow["transform"], new_id: event.target.value === "DROP" ? "" : item.new_id } : item))}
+                            >
+                              {(["IDENTITY", "RENAME", "CAST", "DROP"] as MappingRow["transform"][]).map((transform) => <option key={transform}>{transform}</option>)}
+                            </select>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {!!defaults.length && (
+                  <div className="defaults-list">
+                    {defaults.map((item, index) => (
+                      <div className="default-row" key={index}>
+                        <input
+                          value={item.new_id}
+                          placeholder="new_id"
+                          aria-label={`Default row ${index + 1} new ID`}
+                          onChange={(event) => setDefaults(defaults.map((row, rowIndex) => rowIndex === index ? { ...row, new_id: event.target.value } : row))}
+                        />
+                        <input
+                          value={item.value}
+                          placeholder="default value"
+                          aria-label={`Default row ${index + 1} value`}
+                          onChange={(event) => setDefaults(defaults.map((row, rowIndex) => rowIndex === index ? { ...row, value: event.target.value } : row))}
+                        />
+                        <button
+                          type="button"
+                          className="icon-button"
+                          onClick={() => setDefaults(defaults.filter((_row, rowIndex) => rowIndex !== index))}
+                          aria-label={`Remove default row ${index + 1}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+              <div className="action-row">
+                <button
+                  type="button"
+                  onClick={() => run(baseRequest())}
+                  disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "BASE_DRAFT"}
+                >
+                  Replace schemas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => run(caseRequest("lock_schemas", (record) => record.phase === "BASE_LOCKED"))}
+                  disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "BASE_DRAFT"}
+                >
+                  Lock schemas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => run(putRequest())}
+                  disabled={busy || !journalReady || !canWrite || !["BASE_LOCKED", "RESPONSE_DRAFT"].includes(caseRecord.phase)}
+                >
+                  Put mapping
+                </button>
+                <button
+                  type="button"
+                  onClick={() => run(caseRequest("freeze_mapping", (record) => record.phase === "FROZEN"))}
+                  disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "RESPONSE_DRAFT"}
+                >
+                  Freeze mapping
+                </button>
+                <button
+                  type="button"
+                  onClick={() => run(caseRequest("evaluate_migration", (record) => ["DONE", "UNRESOLVED"].includes(record.phase)))}
+                  disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "FROZEN"}
+                >
+                  Evaluate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => run(caseRequest("retry_migration", (record) => ["UNRESOLVED", "EXHAUSTED", "DONE"].includes(record.phase)))}
+                  disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "UNRESOLVED"}
+                >
+                  Retry
+                </button>
+              </div>
+              <pre className="record-view">{JSON.stringify(caseRecord, null, 2)}</pre>
+            </div>
+          )}
+        </section>
+
+        <TransactionProgress progress={progress} onReconcile={() => void reconcileJournal()} />
+        <div className="status-line" role="status">
+          {busy ? "Writing, finalizing, and reconciling exact historical state…" : message}
+          {error && <span className="error-text">{error}</span>}
+        </div>
+      </main>
+    </>
   );
 }
 
