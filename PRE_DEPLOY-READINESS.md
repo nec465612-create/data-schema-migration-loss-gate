@@ -12,7 +12,7 @@ This package is a local exact-revision candidate for anonymous PRE_DEPLOY review
 - Classification: `INTENTIONALLY FROZEN`
 - Upgrade method/storage: none
 - Deployment target: Studionet only, after PRE_DEPLOY approval
-- Source Git revision: `37f7a6fa3056dcd5a64b39a486205b8d6c718e41` (`Implement F-007 journal recovery UI`)
+- Source Git revision: `27efde8dcbccd3c7e8069e2ccc88c708f776fef7` (`Quarantine foreign journal contexts`)
 - Contract address: not deployed
 
 ## Exact upstream package
@@ -31,13 +31,13 @@ STAGE-2.md SHA-256:                  A44237E81EB8C9336F3AC74444BFE7972D2DF165377
 | Contract schema | `genvm-lint schema contracts/main.py --output contract-schema.json` | PASS |
 | Contract typecheck | `genvm-lint typecheck contracts/main.py` | PASS |
 | Direct runtime | `gltest -q tests` | PASS; 8 tests |
-| Frontend unit | `npm run test` in `frontend` | PASS; 16 tests |
+| Frontend unit | `npm run test` in `frontend` | PASS; 17 tests |
 | Frontend build | `npm run build` in `frontend` | PASS; Vite build; non-blocking chunk-size warning |
 | Browser smoke | `npm run playwright` in `frontend` | PASS; 3 tests |
 | Unsafe HTML scan | `rg -n "dangerouslySetInnerHTML|innerHTML|innerText|eval\\(" frontend/src frontend/tests` | No matches |
 | Journal key scan | `rg -n "glj1:.*operationFingerprint|operationFingerprint.*glj1:|key.*operationFingerprint" frontend/src frontend/tests` | No matches |
 
-The frontend unit result includes journal integrity, finalized-status/historical-readback reconciliation, export-before-archive enforcement, quota, and all required transaction-progress phase vocabulary checks. The browser smoke suite confirms no startup RPC request, disabled signing until journal initialization is healthy, and reload restoration of a retained journal entry with archive locked until export.
+The frontend unit result includes journal integrity, finalized-status/historical-readback reconciliation, mixed-context quarantine, export-before-archive enforcement, quota, and all required transaction-progress phase vocabulary checks. The browser smoke suite confirms no startup RPC request, disabled signing until journal initialization is healthy, and reload restoration of a retained journal entry with archive locked until export.
 
 ## Exact source manifest at the source revision
 
@@ -47,16 +47,16 @@ contract-schema.json                      16A15785BD1ACA7DA89A0C73ADE7CBC22539AB
 tests/test_contract.py                    95F2ED51FABB7963D239CA1A9AB5A5412B2EAAF0C031ED6FBB42C13B1D5F8E6C
 probes/schema_probe.py                   56E77FB226EE223100AFDA26E6CC8797A048EBB5E90157AB8F6114F53122A8B9
 probes/schema_probe.json                 E8D8C7F03BE1AD732393A792DED323DC56AD391E689D6CF908E2068E50C4CFF3
-frontend/src/App.tsx                     DA29611A94FCFB9190EF4024717A1967511B23AB1496663D476B91546F9C966B
+frontend/src/App.tsx                     3D09A0FFDCC63A27F1E4EE1DB55C1E6F9EC91F6E4607FD4526C714D736706D01
 frontend/src/mapping.ts                  7C83AF8E6EB7DC756A1B80160687A6CE0A4FC69F47912823FCAF21F2326D3AD1
-frontend/src/contract.ts                 608B32F0A1337C945481B4CB828CF929CD3C58252A14EF693F7D78AFFB73BBA9
+frontend/src/contract.ts                 BB1BCAD9FA6F170F8ACCF29233C95D9CC2A53E6CAD0263E8C711C7437E1D1FF8
 frontend/src/network.ts                  B263BF17FF928A352555ED8D1E9C5E4C9CABA438D34D4F6474724D33DA9D7BBD
 frontend/src/write-context.ts            3A306279F673248DBEBE599E57C6CA3F7D068D74E6D41462B6742D3BCFFF35C
-frontend/src/pending.ts                  FE4072DC1090F78F2ED3C61AA6C210B3B7E4F8AB3C2A594421389D50CCE85D75
+frontend/src/pending.ts                  2565AA68509BD7E3C6FAF10CA6EBA92FA12031E46B7C3D4CD33052829D569524
 frontend/src/progress.ts                 8ECDCFFD89D977629FBBA4DBCE677A628B473F8AF5AA5692D129A0CBA1E7071F
-frontend/src/styles.css                  687C485EFA78D399E026FEC98B0DA1B0E3D65F5550D7AD5C5B90FFD133D9601B
+frontend/src/styles.css                  348462E5466BC8028CAAC1A209A41AC959BB88E17A2A4D77C3B36F29BDB3C51F
 frontend/tests/pending.test.ts            64AD1BC6ADE5ABF8D0580798B026FFB818A25D4350DADFF99AD0886BB823C068
-frontend/tests/journal-recovery.test.ts   549053B388297692340A20A0D8A336705F6B719CA3341FC7D3B5D33AEC536A3B
+frontend/tests/journal-recovery.test.ts   2E8454D0B980DC5D68F28D38C66345181E35354CBEFD4B636CF4843EBB388404
 frontend/tests/progress.test.ts           7663FD75183D7D26D9ECE677141C97A64CB46F041B6C627888E5D21C9B891053
 frontend/tests/mapping.test.ts            5C65BAC85287BFF92690EFCDC63DA376EC81F9DEC8A9964F0B846E0A18D65048
 frontend/tests/network.test.ts            F57A902C58620B327B14EF6950CE0398CD6740E6D77EA36C6759DD7FD7E3AE2C
