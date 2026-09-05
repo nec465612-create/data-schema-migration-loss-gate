@@ -60,6 +60,11 @@ describe("crash-recoverable journal", () => {
     await expect(reserveJournal({ ...baseInput, method: "put_mapping", intent: "put_mapping:1:2", operationFingerprint: await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, "put_mapping", "put_mapping:1:2"])) })).rejects.toThrow("PENDING_OPERATION_EXISTS");
   });
 
+  it("rejects a caller-supplied fingerprint that does not match its journal context", async () => {
+    await expect(reserveJournal({ ...baseInput, operationFingerprint: "0".repeat(64) })).rejects.toThrow("OPERATION_FINGERPRINT_MISMATCH");
+    expect(enumerateJournal()).toHaveLength(0);
+  });
+
   it("recovers an orphan record after a reload instead of trusting a stale index", async () => {
     const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
     const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });

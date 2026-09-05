@@ -153,6 +153,14 @@ export async function reserveJournal(input: JournalReservation): Promise<Journal
   return withJournalLock(async () => {
     const store = storage();
     const records = enumerateJournal();
+    const expectedFingerprint = await sha256Utf8(JSON.stringify([
+      input.chain,
+      input.contract,
+      input.account,
+      input.method,
+      input.intent,
+    ]));
+    if (input.operationFingerprint !== expectedFingerprint) throw new Error("OPERATION_FINGERPRINT_MISMATCH");
     const active = records.filter((record) =>
       ["SIGNING", "SUBMITTED", "RECONCILE"].includes(record.status),
     );
