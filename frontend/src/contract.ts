@@ -15,6 +15,8 @@ import { chainMatches } from "./network";
 export type ChainName = "localnet" | "studionet" | "testnetAsimov" | "testnetBradbury";
 export type Eip1193Provider = {
   request(args: { method: string; params?: unknown[] }): Promise<unknown>;
+  on?(event: string, listener: (...args: unknown[]) => void): void;
+  removeListener?(event: string, listener: (...args: unknown[]) => void): void;
 };
 export type WalletOption = {
   id: string;
@@ -78,11 +80,107 @@ export function decimal(value: unknown): string {
 
 const readClient: any = createClient({ chain: chains[config.chainName] });
 let writeClient: any = null;
-let connectedAccount: string | null = null;
-let connectedChainId: string | null = null;
+let sessionClient: any = null;
+let selectedProvider: Eip1193Provider | null = null;
+let walletSession: WalletSession | null = null;
+const sessionListeners = new Set<() => void>();
+let removeSessionListeners = () => undefined;
+let sessionGeneration = 0;
+
+export type WalletSession = {
+  account: string;
+  chainId: string;
+  expectedChainId: string;
+  canWrite: boolean;
+};
+
+export function getWalletSession(): WalletSession | null {
+  return walletSession;
+}
+
+export function subscribeWalletSession(listener: () => void): () => void {
+  sessionListeners.add(listener);
+  return () => sessionListeners.delete(listener);
+}
+
+function publishWalletSession(): void {
+  sessionListeners.forEach((listener) => listener());
+}
+
+function validAccount(value: unknown): string | null {
+  return typeof value === "string" && addressPattern.test(value) ? value.toLowerCase() : null;
+}
+
+function bindSessionClient(account: string): any {
+  if (!selectedProvider) return null;
+  return createClient({
+    chain: chains[config.chainName],
+    account: account as `0x${string}`,
+    provider: selectedProvider as any,
+  });
+}
+
+function teardownSessionListeners(): void {
+  sessionGeneration += 1;
+  removeSessionListeners();
+  removeSessionListeners = () => undefined;
+}
+
+function commitWalletSession(next: Omit<WalletSession, "canWrite"> | null): void {
+  if (!next) {
+    walletSession = null;
+    writeClient = null;
+    publishWalletSession();
+    return;
+  }
+  const canWrite = Boolean(sessionClient && chainMatches(next.expectedChainId, next.chainId));
+  walletSession = { ...next, canWrite };
+  writeClient = canWrite ? sessionClient : null;
+  publishWalletSession();
+}
+
+function installSessionListeners(provider: Eip1193Provider): void {
+  teardownSessionListeners();
+  const installedGeneration = sessionGeneration;
+
+  const accountsChanged = async (values: unknown) => {
+    if (installedGeneration !== sessionGeneration) return;
+    const account = Array.isArray(values) ? validAccount(values[0]) : null;
+    if (!account) {
+      disconnectWallet();
+      return;
+    }
+    try {
+      const chainId = String(await provider.request({ method: "eth_chainId" })).toLowerCase();
+      if (installedGeneration !== sessionGeneration || !walletSession) return;
+      sessionClient = bindSessionClient(account);
+      commitWalletSession({ ...walletSession, account, chainId });
+    } catch {
+      if (installedGeneration !== sessionGeneration || !walletSession) return;
+      sessionClient = bindSessionClient(account);
+      commitWalletSession({ ...walletSession, account, chainId: "" });
+    }
+  };
+
+  const chainChanged = (value: unknown) => {
+    if (installedGeneration !== sessionGeneration || !walletSession) return;
+    const chainId = String(value ?? "").toLowerCase();
+    commitWalletSession({ ...walletSession, chainId });
+  };
+
+  const disconnected = () => disconnectWallet();
+  provider.on?.("accountsChanged", accountsChanged);
+  provider.on?.("chainChanged", chainChanged);
+  provider.on?.("disconnect", disconnected);
+  removeSessionListeners = () => {
+    provider.removeListener?.("accountsChanged", accountsChanged);
+    provider.removeListener?.("chainChanged", chainChanged);
+    provider.removeListener?.("disconnect", disconnected);
+  };
+}
 
 export function currentAccount(): string | null {
-  return connectedAccount;
+  return walletSession?.account ?? null;
 }
 
 export function expectedChainId(): string {
@@ -125,34 +223,36 @@ export async function discoverWallets(): Promise<WalletOption[]> {
   return Array.from(discovered.values());
 }
 
-export async function connectWallet(wallet: WalletOption): Promise<{ account: string; chainId: string; expectedChainId: string }> {
+export async function connectWallet(wallet: WalletOption): Promise<WalletSession> {
   const accounts = await wallet.provider.request({ method: "eth_requestAccounts" });
-  if (!Array.isArray(accounts) || typeof accounts[0] !== "string" || !addressPattern.test(accounts[0])) {
+  const account = Array.isArray(accounts) ? validAccount(accounts[0]) : null;
+  if (!account) {
     throw new Error("WALLET_ACCOUNT_UNAVAILABLE");
   }
-  connectedAccount = accounts[0].toLowerCase();
   const chainId = String(await wallet.provider.request({ method: "eth_chainId" })).toLowerCase();
-  connectedChainId = chainId;
-  writeClient = createClient({
-    chain: chains[config.chainName],
-    account: connectedAccount as `0x${string}`,
-    provider: wallet.provider as any,
-  });
-  return { account: connectedAccount, chainId, expectedChainId: expectedChainId() };
+  selectedProvider = wallet.provider;
+  sessionClient = bindSessionClient(account);
+  commitWalletSession({ account, chainId, expectedChainId: expectedChainId() });
+  installSessionListeners(wallet.provider);
+  publishWalletSession();
+  return walletSession as WalletSession;
 }
 
 export async function switchToConfiguredNetwork(): Promise<string> {
-  if (!writeClient) throw new Error("WALLET_NOT_CONNECTED");
-  await writeClient.connect(config.chainName);
-  connectedChainId = String(await writeClient.getChainId?.() ?? "").toLowerCase();
-  if (!chainMatches(expectedChainId(), connectedChainId)) throw new Error("WRONG_CHAIN");
-  return connectedChainId;
+  if (!sessionClient || !walletSession) throw new Error("WALLET_NOT_CONNECTED");
+  await sessionClient.connect(config.chainName);
+  const chainId = String(await sessionClient.getChainId?.() ?? "").toLowerCase();
+  commitWalletSession({ ...walletSession, chainId });
+  if (!chainMatches(expectedChainId(), chainId)) throw new Error("WRONG_CHAIN");
+  return chainId;
 }
 
 export function disconnectWallet(): void {
+  teardownSessionListeners();
   writeClient = null;
-  connectedAccount = null;
-  connectedChainId = null;
+  sessionClient = null;
+  selectedProvider = null;
+  commitWalletSession(null);
 }
 
 export async function readView(functionName: string, args: unknown[] = []): Promise<string> {
@@ -206,22 +306,22 @@ export async function writeAndVerify(
   request: WriteRequest,
   onProgress: (progress: WriteProgress) => void = () => undefined,
 ): Promise<{ record: JournalRecord; caseId: string; encoded: string }> {
-  if (!writeClient || !connectedAccount) throw new Error("WALLET_NOT_CONNECTED");
-  if (!chainMatches(expectedChainId(), connectedChainId ?? undefined)) throw new Error("WRONG_CHAIN");
+  if (!writeClient || !walletSession) throw new Error("WALLET_NOT_CONNECTED");
+  if (!walletSession.canWrite || !chainMatches(expectedChainId(), walletSession.chainId)) throw new Error("WRONG_CHAIN");
   const contract = requireAddress();
   const argsJson = JSON.stringify(request.args, jsonReplacer);
   const argsHash = await sha256Utf8(canonicalJson(request.argsForHash));
   const operationFingerprint = await sha256Utf8(JSON.stringify([
     String(chains[config.chainName].id),
     contract,
-    connectedAccount,
+    walletSession.account,
     request.method,
     request.intent,
   ]));
   const reserved = await reserveJournal({
     chain: String(chains[config.chainName].id),
     contract,
-    account: connectedAccount,
+    account: walletSession.account,
     method: request.method,
     intent: request.intent,
     operationFingerprint,
@@ -282,7 +382,7 @@ export async function writeAndVerify(
           const operation = parsed.last_operation as Record<string, unknown> | undefined;
           if (
             operation?.method === request.method &&
-            operation.caller === connectedAccount &&
+            operation.caller === walletSession.account &&
             operation.args_hash === argsHash &&
             request.verify(parsed)
           ) {

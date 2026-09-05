@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 import {
   canonicalJson,
   config,
   connectWallet,
-  currentAccount,
   currentChainName,
+  disconnectWallet,
   discoverWallets,
   expectedChainId,
+  getWalletSession,
   readView,
+  subscribeWalletSession,
   switchToConfiguredNetwork,
   WalletOption,
   WriteRequest,
@@ -120,7 +122,7 @@ function SchemaTable({ title, fields, setFields }: { title: string; fields: Fiel
 function App() {
   const [wallets, setWallets] = useState<WalletOption[]>([]);
   const [selectedWallet, setSelectedWallet] = useState("");
-  const [connection, setConnection] = useState<{ account: string; chainId: string; expectedChainId: string } | null>(null);
+  const connection = useSyncExternalStore(subscribeWalletSession, getWalletSession, getWalletSession);
   const [oldFields, setOldFields] = useState(initialOld);
   const [newFields, setNewFields] = useState(initialNew);
   const [mappingRows, setMappingRows] = useState<MappingRow[]>(() => initialMappingRows(["name"], ["name"]));
@@ -149,7 +151,8 @@ function App() {
   const basePayload = useMemo(() => ({ old: oldFields, new: newFields }), [oldFields, newFields]);
   const responsePayload = useMemo(() => ({ mapping: mappingRows, defaults }), [mappingRows, defaults]);
   const onCorrectChain = Boolean(connection && chainMatches(connection.expectedChainId, connection.chainId));
-  const account = connection?.account ?? currentAccount();
+  const canWrite = connection?.canWrite === true;
+  const account = connection?.account ?? null;
 
   function resetNotice() { setError(""); setMessage(""); }
 
@@ -168,8 +171,8 @@ function App() {
     const wallet = wallets.find((item) => item.id === selectedWallet);
     if (!wallet) { setError("Choose a wallet first."); return; }
     try {
-      setConnection(await connectWallet(wallet));
-      setMessage("Wallet connected. Check the configured chain before writing.");
+      const next = await connectWallet(wallet);
+      setMessage(chainMatches(next.expectedChainId, next.chainId) ? "Wallet connected on the configured network." : "Wallet connected on the wrong network. Switch before writing.");
     } catch (caught) { setError(String(caught)); }
   }
 
@@ -177,8 +180,7 @@ function App() {
     resetNotice();
     try {
       const chainId = await switchToConfiguredNetwork();
-      setConnection((current) => current ? { ...current, chainId } : current);
-      setMessage("Configured network switch requested. Re-check the chain badge.");
+      setMessage(`Connected to the configured network (${chainId}).`);
     } catch (caught) { setError(String(caught)); }
   }
 
@@ -331,6 +333,7 @@ function App() {
           </select>
           <button type="button" onClick={connect} disabled={!selectedWallet}>Connect</button>
           {connection && !onCorrectChain && <button type="button" className="quiet-button" onClick={switchNetwork}>Switch to {currentChainName()}</button>}
+          {connection && <button type="button" className="quiet-button" onClick={() => { disconnectWallet(); setMessage("Wallet disconnected."); }}>Disconnect</button>}
         </div>
         <p className="muted">Expected chain ID: {expectedChainId()} · account: {account ?? "—"}</p>
       </section>
@@ -352,7 +355,7 @@ function App() {
           creator: account ?? "",
           nonce,
           verify: (record) => record.phase === "BASE_DRAFT" && record.revision === "1",
-        })} disabled={busy || !journalReady || !account || !onCorrectChain || !config.contractAddress}>Create case</button>
+        })} disabled={busy || !journalReady || !account || !canWrite || !config.contractAddress}>Create case</button>
       </section>
 
       <section className="panel" aria-labelledby="cases-heading">
@@ -367,12 +370,12 @@ function App() {
             {!!defaults.length && <div className="defaults-list">{defaults.map((item, index) => <div className="default-row" key={index}><input value={item.new_id} placeholder="new_id" onChange={(event) => setDefaults(defaults.map((row, rowIndex) => rowIndex === index ? { ...row, new_id: event.target.value } : row))} /><input value={item.value} placeholder="default value" onChange={(event) => setDefaults(defaults.map((row, rowIndex) => rowIndex === index ? { ...row, value: event.target.value } : row))} /><button type="button" className="icon-button" onClick={() => setDefaults(defaults.filter((_row, rowIndex) => rowIndex !== index))}>×</button></div>)}</div>}
           </section>
           <div className="action-row">
-            <button type="button" onClick={() => run(baseRequest())} disabled={busy || !journalReady || !onCorrectChain || caseRecord.phase !== "BASE_DRAFT"}>Replace schemas</button>
-            <button type="button" onClick={() => run(caseRequest("lock_schemas", (record) => record.phase === "BASE_LOCKED"))} disabled={busy || !journalReady || !onCorrectChain || caseRecord.phase !== "BASE_DRAFT"}>Lock schemas</button>
-            <button type="button" onClick={() => run(putRequest())} disabled={busy || !journalReady || !onCorrectChain || !["BASE_LOCKED", "RESPONSE_DRAFT"].includes(caseRecord.phase)}>Put mapping</button>
-            <button type="button" onClick={() => run(caseRequest("freeze_mapping", (record) => record.phase === "FROZEN"))} disabled={busy || !journalReady || !onCorrectChain || caseRecord.phase !== "RESPONSE_DRAFT"}>Freeze mapping</button>
-            <button type="button" onClick={() => run(caseRequest("evaluate_migration", (record) => ["DONE", "UNRESOLVED"].includes(record.phase)))} disabled={busy || !journalReady || !onCorrectChain || caseRecord.phase !== "FROZEN"}>Evaluate</button>
-            <button type="button" onClick={() => run(caseRequest("retry_migration", (record) => ["UNRESOLVED", "EXHAUSTED", "DONE"].includes(record.phase)))} disabled={busy || !journalReady || !onCorrectChain || caseRecord.phase !== "UNRESOLVED"}>Retry</button>
+            <button type="button" onClick={() => run(baseRequest())} disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "BASE_DRAFT"}>Replace schemas</button>
+            <button type="button" onClick={() => run(caseRequest("lock_schemas", (record) => record.phase === "BASE_LOCKED"))} disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "BASE_DRAFT"}>Lock schemas</button>
+            <button type="button" onClick={() => run(putRequest())} disabled={busy || !journalReady || !canWrite || !["BASE_LOCKED", "RESPONSE_DRAFT"].includes(caseRecord.phase)}>Put mapping</button>
+            <button type="button" onClick={() => run(caseRequest("freeze_mapping", (record) => record.phase === "FROZEN"))} disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "RESPONSE_DRAFT"}>Freeze mapping</button>
+            <button type="button" onClick={() => run(caseRequest("evaluate_migration", (record) => ["DONE", "UNRESOLVED"].includes(record.phase)))} disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "FROZEN"}>Evaluate</button>
+            <button type="button" onClick={() => run(caseRequest("retry_migration", (record) => ["UNRESOLVED", "EXHAUSTED", "DONE"].includes(record.phase)))} disabled={busy || !journalReady || !canWrite || caseRecord.phase !== "UNRESOLVED"}>Retry</button>
           </div>
           <pre className="record-view">{JSON.stringify(caseRecord, null, 2)}</pre>
         </div>}
