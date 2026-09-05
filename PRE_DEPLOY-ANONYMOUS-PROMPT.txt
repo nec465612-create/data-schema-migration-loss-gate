@@ -7,9 +7,9 @@ PROJECT: Data Schema Migration Loss Gate
 PROJECT PATH: E:\Genlayer-Projects\data-schema-migration-loss-gate
 CATEGORY: PROJECT
 CHECKPOINT: PRE_DEPLOY
-SOURCE REVISION: 27efde8dcbccd3c7e8069e2ccc88c708f776fef7
-PACKAGE: DSM-LG-PREDEPLOY-27EFDE8
-STATUS: corrective delta for F-007 mixed-context journal quarantine; send only to the retained reviewer route
+SOURCE REVISION: 60fe288f5291126dc33dac4fee8b643e1ea70eff
+PACKAGE: DSM-LG-PREDEPLOY-60FE288
+STATUS: corrective delta for F-008 journal operation-fingerprint validation; send only to the retained reviewer route
 
 ## Objective
 
@@ -27,7 +27,7 @@ The approved research handoff is Candidate C3, category `PROJECT`. The research 
 Canonical research package SHA-256: 3464E830908CB1D87504057567242D36BDCD0C4FD59934B7D22F6482C6799ED2
 STAGE-1.md SHA-256:                  AC7AF33D7EEE958472FD9E2DCB88DA12C46C786C9E98691231D5FDB936E28B9D
 STAGE-2.md SHA-256:                  A44237E81EB8C9336F3AC74444BFE7972D2DF165377DEF9A08383559DFAA02FF
-SOURCE GIT COMMIT:                  27efde8dcbccd3c7e8069e2ccc88c708f776fef7
+SOURCE GIT COMMIT:                  60fe288f5291126dc33dac4fee8b643e1ea70eff
 ```
 
 The local project initially contained only `RESEARCH-HANDOFF.md`, `STAGE-1.md`, and `STAGE-2.md`; this Build independently created the implementation and local Git repository. No source, address, approval, credential, deployment, or evidence is inherited from another Task.
@@ -79,10 +79,10 @@ frontend/src/mapping.ts                  7C83AF8E6EB7DC756A1B80160687A6CE0A4FC69
 frontend/src/contract.ts                 BB1BCAD9FA6F170F8ACCF29233C95D9CC2A53E6CAD0263E8C711C7437E1D1FF8
 frontend/src/network.ts                  B263BF17FF928A352555ED8D1E9C5E4C9CABA438D34D4F6474724D33DA9D7BBD
 frontend/src/write-context.ts            3A306279F673248DBEBE599E57C6CA3F7D068D74E6D41462B6742D3BCFFF35C
-frontend/src/pending.ts                  2565AA68509BD7E3C6FAF10CA6EBA92FA12031E46B7C3D4CD33052829D569524
+frontend/src/pending.ts                  0BB96B1D80FF83CFF4829C8F908C1B19284D385752E61282A99046BA304D93CD
 frontend/src/progress.ts                 8ECDCFFD89D977629FBBA4DBCE677A628B473F8AF5AA5692D129A0CBA1E7071F
 frontend/src/styles.css                  348462E5466BC8028CAAC1A209A41AC959BB88E17A2A4D77C3B36F29BDB3C51F
-frontend/tests/pending.test.ts            64AD1BC6ADE5ABF8D0580798B026FFB818A25D4350DADFF99AD0886BB823C068
+frontend/tests/pending.test.ts            EF391F94A137D96BB35F0BD28C141673E45E1F521CFB30FB68C6E3308351CE8D
 frontend/tests/journal-recovery.test.ts   2E8454D0B980DC5D68F28D38C66345181E35354CBEFD4B636CF4843EBB388404
 frontend/tests/progress.test.ts           7663FD75183D7D26D9ECE677141C97A64CB46F041B6C627888E5D21C9B891053
 frontend/tests/mapping.test.ts            5C65BAC85287BFF92690EFCDC63DA376EC81F9DEC8A9964F0B846E0A18D65048
@@ -140,6 +140,10 @@ At source commit `716ecce58705c9a463ac6908718798989f753e0a`, wallet discovery ac
 
 At source commit `27efde8dcbccd3c7e8069e2ccc88c708f776fef7`, the frontend rebuilds and renders all retained `glj1:` records on load as read-only context, reconciles each retained transaction against finalized status and authoritative `get_version` readback using the stored intent/arguments, explicitly persists a chain/contract mismatch as `QUARANTINED` without querying under the wrong context, exposes portable JSON export, and allows archive only after export and only for `VERIFIED` or `FINALIZED_ERROR`. `frontend/tests/pending.test.ts`, `frontend/tests/journal-recovery.test.ts`, and `frontend/tests/flow.spec.ts` cover orphan/reload recovery, bounded quota, export-before-archive, finalized/readback reconciliation, non-finalized retention, mixed-journal quarantine, and browser-visible gating. No ABI signature, storage type, method, or transaction envelope changed.
 
+### F-008 correction delta
+
+At source commit `60fe288f5291126dc33dac4fee8b643e1ea70eff`, `reserveJournal` recomputes the operation fingerprint inside the exclusive journal lock from `[chain, contract, account, method, intent]` and rejects a mismatched caller-supplied fingerprint before writing a reservation or index entry. `frontend/tests/pending.test.ts` covers the mismatch rejection and confirms no journal record is created. No ABI signature, storage type, method, or transaction envelope changed.
+
 1. The installed Direct Mode runner presents fixture addresses as 20-byte values in local tests. The contract converts either bytes or production-shaped strings to lowercase `0x`-hex before storage, actor checks, indexes, and hashes. This is a local runtime representation adaptation, not a public ABI change.
 2. The reducer fixes structural consequences deterministically and sends only compatible rows to the semantic path. This prevents model output from converting a known structural loss into success.
 3. The installed browser package is `genlayer-js` 1.1.8. `VITE_CONTRACT_ADDRESS` is fail-closed until an exact deployment address exists.
@@ -163,7 +167,7 @@ gltest -q tests
 PASS; 8 tests, including CRLF normalization
 
 npm --prefix frontend run test
-PASS; 8 test files, 17 tests, including journal reconciliation, mixed-context quarantine, quota, export-before-archive, the real `writeAndVerify` historical-readback account-switch race, and wallet discovery allowlist tests
+PASS; 8 test files, 18 tests, including journal fingerprint validation, journal reconciliation, mixed-context quarantine, quota, export-before-archive, the real `writeAndVerify` historical-readback account-switch race, and wallet discovery allowlist tests
 
 npm --prefix frontend run build
 PASS; Vite build; non-blocking chunk-size warning for the main bundle
@@ -211,7 +215,7 @@ Apply the current canonical governance gates, including schema/runtime compatibi
 ```text
 REVIEWER: anonymous co-review AI
 CHECKPOINT: PRE_DEPLOY
-REVISION/PACKAGE: source 27efde8dcbccd3c7e8069e2ccc88c708f776fef7; package DSM-LG-PREDEPLOY-27EFDE8
+REVISION/PACKAGE: source 60fe288f5291126dc33dac4fee8b643e1ea70eff; package DSM-LG-PREDEPLOY-60FE288
 VERDICT: ANONYMOUS REVIEW APPROVED - PRE_DEPLOY
 FINDINGS: NONE, or for each finding provide ID, severity, violated requirement, exact file/line/URL/artifact, evidence, cause or contradiction, impact, concrete correction, and verification criterion.
 REBUTTALS: none, or each finding ID with accepted/revised/retained decision and exact evidence.

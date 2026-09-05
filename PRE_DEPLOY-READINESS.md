@@ -12,7 +12,7 @@ This package is a local exact-revision candidate for anonymous PRE_DEPLOY review
 - Classification: `INTENTIONALLY FROZEN`
 - Upgrade method/storage: none
 - Deployment target: Studionet only, after PRE_DEPLOY approval
-- Source Git revision: `27efde8dcbccd3c7e8069e2ccc88c708f776fef7` (`Quarantine foreign journal contexts`)
+- Source Git revision: `60fe288f5291126dc33dac4fee8b643e1ea70eff` (`Validate journal operation fingerprints`)
 - Contract address: not deployed
 
 ## Exact upstream package
@@ -31,13 +31,13 @@ STAGE-2.md SHA-256:                  A44237E81EB8C9336F3AC74444BFE7972D2DF165377
 | Contract schema | `genvm-lint schema contracts/main.py --output contract-schema.json` | PASS |
 | Contract typecheck | `genvm-lint typecheck contracts/main.py` | PASS |
 | Direct runtime | `gltest -q tests` | PASS; 8 tests |
-| Frontend unit | `npm run test` in `frontend` | PASS; 17 tests |
+| Frontend unit | `npm run test` in `frontend` | PASS; 18 tests |
 | Frontend build | `npm run build` in `frontend` | PASS; Vite build; non-blocking chunk-size warning |
 | Browser smoke | `npm run playwright` in `frontend` | PASS; 3 tests |
 | Unsafe HTML scan | `rg -n "dangerouslySetInnerHTML|innerHTML|innerText|eval\\(" frontend/src frontend/tests` | No matches |
 | Journal key scan | `rg -n "glj1:.*operationFingerprint|operationFingerprint.*glj1:|key.*operationFingerprint" frontend/src frontend/tests` | No matches |
 
-The frontend unit result includes journal integrity, finalized-status/historical-readback reconciliation, mixed-context quarantine, export-before-archive enforcement, quota, and all required transaction-progress phase vocabulary checks. The browser smoke suite confirms no startup RPC request, disabled signing until journal initialization is healthy, and reload restoration of a retained journal entry with archive locked until export.
+The frontend unit result includes journal integrity, caller-fingerprint validation, finalized-status/historical-readback reconciliation, mixed-context quarantine, export-before-archive enforcement, quota, and all required transaction-progress phase vocabulary checks. The browser smoke suite confirms no startup RPC request, disabled signing until journal initialization is healthy, and reload restoration of a retained journal entry with archive locked until export.
 
 ## Exact source manifest at the source revision
 
@@ -52,10 +52,10 @@ frontend/src/mapping.ts                  7C83AF8E6EB7DC756A1B80160687A6CE0A4FC69
 frontend/src/contract.ts                 BB1BCAD9FA6F170F8ACCF29233C95D9CC2A53E6CAD0263E8C711C7437E1D1FF8
 frontend/src/network.ts                  B263BF17FF928A352555ED8D1E9C5E4C9CABA438D34D4F6474724D33DA9D7BBD
 frontend/src/write-context.ts            3A306279F673248DBEBE599E57C6CA3F7D068D74E6D41462B6742D3BCFFF35C
-frontend/src/pending.ts                  2565AA68509BD7E3C6FAF10CA6EBA92FA12031E46B7C3D4CD33052829D569524
+frontend/src/pending.ts                  0BB96B1D80FF83CFF4829C8F908C1B19284D385752E61282A99046BA304D93CD
 frontend/src/progress.ts                 8ECDCFFD89D977629FBBA4DBCE677A628B473F8AF5AA5692D129A0CBA1E7071F
 frontend/src/styles.css                  348462E5466BC8028CAAC1A209A41AC959BB88E17A2A4D77C3B36F29BDB3C51F
-frontend/tests/pending.test.ts            64AD1BC6ADE5ABF8D0580798B026FFB818A25D4350DADFF99AD0886BB823C068
+frontend/tests/pending.test.ts            EF391F94A137D96BB35F0BD28C141673E45E1F521CFB30FB68C6E3308351CE8D
 frontend/tests/journal-recovery.test.ts   2E8454D0B980DC5D68F28D38C66345181E35354CBEFD4B636CF4843EBB388404
 frontend/tests/progress.test.ts           7663FD75183D7D26D9ECE677141C97A64CB46F041B6C627888E5D21C9B891053
 frontend/tests/mapping.test.ts            5C65BAC85287BFF92690EFCDC63DA376EC81F9DEC8A9964F0B846E0A18D65048

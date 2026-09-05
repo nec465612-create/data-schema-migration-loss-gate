@@ -53,6 +53,10 @@ Wallet discovery now accepts only the exact EIP-6963 RDNS identities `io.metamas
 
 The frontend now rebuilds the `glj1:` index on load and visibly renders every retained journal record as read-only chain, contract, account, intent, arguments, pre-state, transaction-hash, and status context. Reconciliation queries the retained transaction hash for finality, maps finalized execution errors, resolves create IDs from the stored creator/nonce, and verifies the stored method/caller/revision against authoritative `get_version` readback without resubmitting. A record whose stored chain or contract differs from the current runtime is explicitly persisted as `QUARANTINED`, remains exportable, is not queried under the wrong context, and cannot be archived. Each record has a portable JSON export; `archiveJournalRecord` is only reachable after that record has been exported and only for `VERIFIED` or `FINALIZED_ERROR`. Regressions cover reload/orphan recovery, the 32-record quota, export-before-archive, finalized/readback reconciliation, non-finalized retention, mixed-journal quarantine, and browser-visible recovery/archive gating. This is a frontend-only correction at source commit `27efde8dcbccd3c7e8069e2ccc88c708f776fef7`; the contract ABI, storage, and transaction envelope are unchanged.
 
+### F-008 journal fingerprint validation
+
+`reserveJournal` now recomputes the operation fingerprint inside the exclusive journal lock from the exact `[chain, contract, account, method, intent]` context and rejects a mismatched caller-supplied fingerprint before any reservation or index write. `frontend/tests/pending.test.ts` covers the mismatch rejection and confirms the journal remains empty. This is a frontend-only correction at source commit `60fe288f5291126dc33dac4fee8b643e1ea70eff`; the contract ABI, storage, and transaction envelope are unchanged.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.
