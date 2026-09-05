@@ -47,12 +47,15 @@ describe("crash-recoverable journal", () => {
     const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
     const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
     expect(record.reservation).toMatch(/^[0-9a-f]{32}$/);
+    expect(record.created_ms).toMatch(/^(0|[1-9][0-9]*)$/);
     expect(journalKey(record.reservation)).toBe(`glj1:${record.reservation}`);
     expect(JSON.parse(store.getItem(journalKey(record.reservation))!).operationFingerprint).toBeUndefined();
     await expect(reserveJournal({ ...baseInput, operationFingerprint: fingerprint })).rejects.toThrow("PENDING_OPERATION_EXISTS");
     const txHash = `0x${"b".repeat(64)}`;
     await updateJournal(record.reservation, { status: "SUBMITTED", tx_hash: txHash });
     expect(enumerateJournal()[0].tx_hash).toBe(txHash);
+    await expect(updateJournal(record.reservation, { tx_hash: `0x${"c".repeat(64)}` })).rejects.toThrow("IMMUTABLE_TX_HASH");
+    await expect(reserveJournal({ ...baseInput, method: "put_mapping", intent: "put_mapping:1:2", operationFingerprint: await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, "put_mapping", "put_mapping:1:2"])) })).rejects.toThrow("PENDING_OPERATION_EXISTS");
   });
 
   it("rebuilds an index from an orphan record instead of trusting a stale index", async () => {

@@ -15,6 +15,7 @@ import {
   writeAndVerify,
 } from "./contract";
 import { rebuildJournalIndex } from "./pending";
+import { isPendingPhase, PROGRESS_COPY, WriteProgress } from "./progress";
 import "./styles.css";
 
 type FieldType = "TEXT" | "INT" | "BOOL" | "ENUM";
@@ -36,6 +37,41 @@ function parseJson(text: string, label: string): any {
 
 function recordPhase(record: Record<string, any> | null): string {
   return record?.phase ?? "—";
+}
+
+function TransactionProgress({ progress, onReconcile }: { progress: WriteProgress; onReconcile: () => void }) {
+  const [copyState, setCopyState] = useState("");
+  if (progress.phase === "IDLE") return null;
+  const copy = PROGRESS_COPY[progress.phase];
+  const pending = isPendingPhase(progress.phase);
+  const phaseClass = pending ? "is-pending" : `is-${progress.phase.toLowerCase()}`;
+
+  async function copyHash() {
+    if (!progress.hash || !navigator.clipboard) {
+      setCopyState("Clipboard unavailable");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(progress.hash);
+      setCopyState("Copied");
+    } catch {
+      setCopyState("Copy failed");
+    }
+  }
+
+  return (
+    <section className={`transaction-progress ${phaseClass}`} data-transaction-phase={progress.phase} aria-live="polite" aria-atomic="true">
+      <div className="transaction-progress__heading">
+        {pending && <span className="transaction-progress__spinner" aria-hidden="true" />}
+        <strong>{copy.title}</strong>
+        <span className="transaction-progress__phase">{progress.phase}</span>
+      </div>
+      <p>{progress.message || copy.detail}</p>
+      {progress.hash && <div className="transaction-progress__hash"><code>{progress.hash}</code><button type="button" className="quiet-button" onClick={copyHash}>Copy hash</button>{copyState && <span className="muted">{copyState}</span>}</div>}
+      {progress.phase === "RECONCILIATION_REQUIRED" && <p className="transaction-progress__warning">Do not submit this operation again until the retained hash and journal record are reconciled.</p>}
+      {progress.phase === "RECONCILIATION_REQUIRED" && <button type="button" className="quiet-button" onClick={onReconcile}>Rebuild local journal</button>}
+    </section>
+  );
 }
 
 function SchemaTable({ title, fields, setFields }: { title: string; fields: Field[]; setFields: (fields: Field[]) => void }) {
@@ -89,9 +125,17 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("Ready. No chain read is made until you choose an action.");
   const [error, setError] = useState("");
+  const [journalReady, setJournalReady] = useState(false);
+  const [progress, setProgress] = useState<WriteProgress>({ phase: "IDLE" });
 
   useEffect(() => {
-    void rebuildJournalIndex().catch((caught) => setError(String(caught)));
+    void rebuildJournalIndex()
+      .then(() => setJournalReady(true))
+      .catch((caught) => {
+        setJournalReady(false);
+        setMessage("Journal lock unavailable; signing is disabled. Reads and export remain available.");
+        setError(String(caught));
+      });
   }, []);
 
   const basePayload = useMemo(() => ({ old: oldFields, new: newFields }), [oldFields, newFields]);
@@ -163,14 +207,27 @@ function App() {
 
   async function run(request: WriteRequest) {
     resetNotice();
+    if (!journalReady) { setError("Journal lock unavailable; signing is disabled."); return; }
+    setProgress({ phase: "IDLE" });
     setBusy(true);
     try {
-      const result = await writeAndVerify(request);
+      const result = await writeAndVerify(request, setProgress);
       setCaseId(result.caseId);
       setCaseRecord(JSON.parse(result.encoded));
       setMessage(`${request.method}: VERIFIED from exact historical readback at revision ${JSON.parse(result.encoded).revision}.`);
     } catch (caught) { setError(String(caught)); }
     finally { setBusy(false); }
+  }
+
+  async function reconcileJournal() {
+    try {
+      await rebuildJournalIndex();
+      setJournalReady(true);
+      setMessage("Local journal rebuilt. Review the retained hash and chain state; no transaction was resubmitted.");
+    } catch (caught) {
+      setJournalReady(false);
+      setError(String(caught));
+    }
   }
 
   function baseRequest(): WriteRequest {
@@ -266,7 +323,7 @@ function App() {
           creator: account ?? "",
           nonce,
           verify: (record) => record.phase === "BASE_DRAFT" && record.revision === 1,
-        })} disabled={busy || !account || !config.contractAddress}>Create case</button>
+        })} disabled={busy || !journalReady || !account || !config.contractAddress}>Create case</button>
       </section>
 
       <section className="panel" aria-labelledby="cases-heading">
@@ -281,17 +338,18 @@ function App() {
             {!!defaults.length && <div className="defaults-list">{defaults.map((item, index) => <div className="default-row" key={index}><input value={item.new_id} placeholder="new_id" onChange={(event) => setDefaults(defaults.map((row, rowIndex) => rowIndex === index ? { ...row, new_id: event.target.value } : row))} /><input value={item.value} placeholder="default value" onChange={(event) => setDefaults(defaults.map((row, rowIndex) => rowIndex === index ? { ...row, value: event.target.value } : row))} /><button type="button" className="icon-button" onClick={() => setDefaults(defaults.filter((_row, rowIndex) => rowIndex !== index))}>×</button></div>)}</div>}
           </section>
           <div className="action-row">
-            <button type="button" onClick={() => run(baseRequest())} disabled={busy || !onCorrectChain || caseRecord.phase !== "BASE_DRAFT"}>Replace schemas</button>
-            <button type="button" onClick={() => run(caseRequest("lock_schemas", (record) => record.phase === "BASE_LOCKED"))} disabled={busy || !onCorrectChain || caseRecord.phase !== "BASE_DRAFT"}>Lock schemas</button>
-            <button type="button" onClick={() => run(putRequest())} disabled={busy || !onCorrectChain || !["BASE_LOCKED", "RESPONSE_DRAFT"].includes(caseRecord.phase)}>Put mapping</button>
-            <button type="button" onClick={() => run(caseRequest("freeze_mapping", (record) => record.phase === "FROZEN"))} disabled={busy || !onCorrectChain || caseRecord.phase !== "RESPONSE_DRAFT"}>Freeze mapping</button>
-            <button type="button" onClick={() => run(caseRequest("evaluate_migration", (record) => ["DONE", "UNRESOLVED"].includes(record.phase)))} disabled={busy || !onCorrectChain || caseRecord.phase !== "FROZEN"}>Evaluate</button>
-            <button type="button" onClick={() => run(caseRequest("retry_migration", (record) => ["UNRESOLVED", "EXHAUSTED", "DONE"].includes(record.phase)))} disabled={busy || !onCorrectChain || caseRecord.phase !== "UNRESOLVED"}>Retry</button>
+            <button type="button" onClick={() => run(baseRequest())} disabled={busy || !journalReady || !onCorrectChain || caseRecord.phase !== "BASE_DRAFT"}>Replace schemas</button>
+            <button type="button" onClick={() => run(caseRequest("lock_schemas", (record) => record.phase === "BASE_LOCKED"))} disabled={busy || !journalReady || !onCorrectChain || caseRecord.phase !== "BASE_DRAFT"}>Lock schemas</button>
+            <button type="button" onClick={() => run(putRequest())} disabled={busy || !journalReady || !onCorrectChain || !["BASE_LOCKED", "RESPONSE_DRAFT"].includes(caseRecord.phase)}>Put mapping</button>
+            <button type="button" onClick={() => run(caseRequest("freeze_mapping", (record) => record.phase === "FROZEN"))} disabled={busy || !journalReady || !onCorrectChain || caseRecord.phase !== "RESPONSE_DRAFT"}>Freeze mapping</button>
+            <button type="button" onClick={() => run(caseRequest("evaluate_migration", (record) => ["DONE", "UNRESOLVED"].includes(record.phase)))} disabled={busy || !journalReady || !onCorrectChain || caseRecord.phase !== "FROZEN"}>Evaluate</button>
+            <button type="button" onClick={() => run(caseRequest("retry_migration", (record) => ["UNRESOLVED", "EXHAUSTED", "DONE"].includes(record.phase)))} disabled={busy || !journalReady || !onCorrectChain || caseRecord.phase !== "UNRESOLVED"}>Retry</button>
           </div>
           <pre className="record-view">{JSON.stringify(caseRecord, null, 2)}</pre>
         </div>}
       </section>
 
+      <TransactionProgress progress={progress} onReconcile={() => void reconcileJournal()} />
       <div className="status-line" role="status">{busy ? "Writing, finalizing, and reconciling exact historical state…" : message}{error && <span className="error-text">{error}</span>}</div>
     </main>
   );

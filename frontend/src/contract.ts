@@ -9,6 +9,7 @@ import {
   sha256Utf8,
   updateJournal,
 } from "./pending";
+import { WriteProgress } from "./progress";
 
 export type ChainName = "localnet" | "studionet" | "testnetAsimov" | "testnetBradbury";
 export type Eip1193Provider = {
@@ -195,7 +196,10 @@ async function mark(reservation: string, status: JournalRecord["status"], txHash
   }
 }
 
-export async function writeAndVerify(request: WriteRequest): Promise<{ record: JournalRecord; caseId: string; encoded: string }> {
+export async function writeAndVerify(
+  request: WriteRequest,
+  onProgress: (progress: WriteProgress) => void = () => undefined,
+): Promise<{ record: JournalRecord; caseId: string; encoded: string }> {
   if (!writeClient || !connectedAccount) throw new Error("WALLET_NOT_CONNECTED");
   const contract = requireAddress();
   const argsJson = JSON.stringify(request.args, jsonReplacer);
@@ -222,6 +226,7 @@ export async function writeAndVerify(request: WriteRequest): Promise<{ record: J
   });
   let txHash = "";
   try {
+    onProgress({ phase: "WAITING_FOR_WALLET" });
     txHash = String(await writeClient.writeContract({
       address: contract,
       functionName: request.method,
@@ -229,8 +234,10 @@ export async function writeAndVerify(request: WriteRequest): Promise<{ record: J
       value: 0n,
     }));
     await updateJournal(reserved.reservation, { tx_hash: txHash, status: "SUBMITTED" });
+    onProgress({ phase: "SUBMITTED", hash: txHash });
 
     let transaction: any = null;
+    onProgress({ phase: "WAITING_FOR_FINALITY", hash: txHash });
     for (const delay of [2000, 4000, 8000]) {
       await wait(delay);
       transaction = await readClient.getTransaction({ hash: txHash });
@@ -240,6 +247,7 @@ export async function writeAndVerify(request: WriteRequest): Promise<{ record: J
       await mark(reserved.reservation, "RECONCILE", txHash);
       throw new Error("RECONCILE_RECEIPT_NOT_FINAL");
     }
+    onProgress({ phase: "VERIFYING_EXECUTION", hash: txHash });
     if (transaction.txExecutionResultName !== ExecutionResult.FINISHED_WITH_RETURN) {
       await mark(reserved.reservation, "FINALIZED_ERROR", txHash);
       throw new Error(`FINALIZED_ERROR:${transaction.txExecutionResultName ?? "UNKNOWN"}`);
@@ -255,6 +263,7 @@ export async function writeAndVerify(request: WriteRequest): Promise<{ record: J
     const revision = (BigInt(request.preRevision) + 1n).toString();
     const readAttempts = request.caseId ? 2 : 1;
     let encoded = "null";
+    onProgress({ phase: "VERIFYING_READBACK", hash: txHash });
     for (let attempt = 0; attempt < readAttempts; attempt += 1) {
       if (attempt > 0) await wait(4000);
       encoded = await readView("get_version", [BigInt(caseId), BigInt(revision)]);
@@ -271,6 +280,7 @@ export async function writeAndVerify(request: WriteRequest): Promise<{ record: J
             request.verify(parsed)
           ) {
             const verified = await updateJournal(reserved.reservation, { status: "VERIFIED", tx_hash: txHash });
+            onProgress({ phase: "SUCCESS", hash: txHash });
             return { record: verified, caseId, encoded };
           }
         }
@@ -282,9 +292,15 @@ export async function writeAndVerify(request: WriteRequest): Promise<{ record: J
     if (txHash === "") {
       if (providerRejected(error)) {
         try { await removeUnsignedJournal(reserved.reservation); } catch { /* retain the original wallet error */ }
+        onProgress({ phase: "REJECTED", message: errorText(error) });
       } else {
         await mark(reserved.reservation, "RECONCILE");
+        onProgress({ phase: "RECONCILIATION_REQUIRED", message: errorText(error) });
       }
+    } else if (errorText(error).startsWith("FINALIZED_ERROR:")) {
+      onProgress({ phase: "FAILED", hash: txHash, message: errorText(error) });
+    } else {
+      onProgress({ phase: "RECONCILIATION_REQUIRED", hash: txHash, message: errorText(error) });
     }
     throw new Error(errorText(error));
   }

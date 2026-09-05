@@ -1,0 +1,58 @@
+ROLE
+You are Claude, the bounded presentation-layer designer and coder for the existing GenLayer Build frontend. The functional shell already exists. Redesign and implement only the visible presentation layer for this one product; do not redesign the contract or transaction architecture.
+
+PROJECT
+Name: Data Schema Migration Loss Gate
+Path: E:\Genlayer-Projects\data-schema-migration-loss-gate
+Frontend: E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend
+Design rationale: E:\Genlayer-Projects\data-schema-migration-loss-gate\FRONTEND-DESIGN-RATIONALE.md
+
+READ THESE EXACT FILES FIRST
+- E:\Genlayer-Projects\data-schema-migration-loss-gate\FRONTEND-DESIGN-RATIONALE.md
+- E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\App.tsx
+- E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\styles.css
+- E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\contract.ts
+- E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\pending.ts
+- E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\tests\flow.spec.ts
+
+CURRENT OFFICIAL GENLAYER LINKS
+- https://docs.genlayer.com/developers/decentralized-applications/genlayer-js
+- https://docs.genlayer.com/developers/decentralized-applications/writing-data
+- https://docs.genlayer.com/developers/decentralized-applications/querying-a-transaction
+- https://docs.genlayer.com/api-references/genlayer-node/gen/gen_getTransactionStatus
+- https://docs.genlayer.com/api-references/genlayer-linter
+
+PRODUCT DIRECTION
+Make the page feel like a calm, high-trust audit workstation: paper-white surfaces, ink-dark editorial typography, teal verification accents, amber public-data caution, and compact monospace evidence labels. The product's core visual metaphor is two schema columns converging into one checked gate. Do not use generic crypto-dashboard styling, coin imagery, shield imagery, stock imagery, or AI sparkle motifs. If you add a brand mark, use a small geometric split-to-check mark and keep it inline/local.
+
+REQUIRED USER EXPERIENCE
+- Explain “Does this mapping preserve information?” in the first viewport.
+- Keep the exact disclaimer: “Assessment of this exact submitted material only; not verification of external facts.”
+- Keep the exact warning: “All submitted text will be public and permanent. Do not include private information, credentials or personal records.”
+- Make roles clear: schema owner, mapper, evaluator.
+- Keep old/new tables comparable on desktop and usable on mobile.
+- Keep all inputs keyboard accessible with visible focus states and labels.
+- Preserve readable error/status text and text-node rendering for all supplied data.
+- Respect prefers-reduced-motion. Do not use animation as evidence.
+
+STRICT FILE BOUNDARY
+You may modify only:
+- E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\App.tsx
+- E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\styles.css
+You may add a local SVG/brand asset only under:
+- E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\assets\
+Do not modify `contract.ts`, `pending.ts`, `main.tsx`, tests, package files, Vite/TypeScript config, contract files, schemas, or documentation. Do not add a dependency.
+
+INVARIANTS THAT MUST REMAIN BYTE/FLOW-COMPATIBLE
+- Do not change any import or call to the wallet/SDK/journal functions.
+- Do not change provider allowlist, selected-provider binding, chain checks, contract address handling, Web Locks, journal keys/statuses, operation fingerprints, hash inputs, finality checks, exact `get_version` readback, retry limits, or RPC timing/counts.
+- Do not add startup RPC calls, polling, automatic resubmission, optimistic success, or hidden network requests.
+- Do not use `dangerouslySetInnerHTML`, `innerHTML`, executable Markdown, or untrusted URLs as trusted links.
+- Keep test-visible labels for “Schema migration loss gate”, “Create case”, “Discover wallets”, “Connect”, “Load IDs”, “Assessment of this exact submitted material only; not verification of external facts.” and the public-data warning.
+
+IMPLEMENTATION AND HANDOFF
+1. Inspect the current shell and rationale.
+2. Make the smallest coherent presentation redesign within the strict file boundary.
+3. Run `npm run build` and `npm run test` from `E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend`.
+4. Run `npm run playwright` if the browser runtime is available.
+5. Report the exact files changed, commands/results, and any design tradeoff. Do not claim contract, wallet, RPC, journal, deployment, or release approval.

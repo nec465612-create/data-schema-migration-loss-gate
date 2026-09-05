@@ -24,7 +24,7 @@ export type JournalRecord = {
   pre_hash: string;
   tx_hash: string;
   status: JournalStatus;
-  created_ms: number;
+  created_ms: string;
 };
 
 type JournalReservation = Omit<JournalRecord, "v" | "reservation" | "created_ms"> & {
@@ -58,6 +58,7 @@ export function validateJournalRecord(value: unknown): JournalRecord {
     "pre_hash",
     "tx_hash",
     "status",
+    "created_ms",
   ] as const;
   for (const key of textKeys) {
     if (typeof value[key] !== "string") throw new Error("CORRUPT_JOURNAL");
@@ -68,16 +69,13 @@ export function validateJournalRecord(value: unknown): JournalRecord {
   if (!/^0x[0-9a-f]{40}$/.test(value.contract as string) || !/^0x[0-9a-f]{40}$/.test(value.account as string)) {
     throw new Error("CORRUPT_JOURNAL");
   }
-  if (!/^[0-9]+$/.test(value.chain as string) || !/^(0|[1-9][0-9]*)$/.test(value.pre_revision as string)) {
+  if (!/^(0|[1-9][0-9]*)$/.test(value.chain as string) || !/^(0|[1-9][0-9]*)$/.test(value.pre_revision as string) || !/^(0|[1-9][0-9]*)$/.test(value.created_ms as string)) {
     throw new Error("CORRUPT_JOURNAL");
   }
-  if (new TextEncoder().encode(value.method as string).length > 48 || new TextEncoder().encode(value.intent as string).length > 160 || new TextEncoder().encode(value.args_json as string).length > 18000) {
+  if (new TextEncoder().encode(value.method as string).length === 0 || new TextEncoder().encode(value.method as string).length > 48 || new TextEncoder().encode(value.intent as string).length === 0 || new TextEncoder().encode(value.intent as string).length > 160 || new TextEncoder().encode(value.args_json as string).length === 0 || new TextEncoder().encode(value.args_json as string).length > 18000) {
     throw new Error("CORRUPT_JOURNAL");
   }
   if (!HEX64_RE.test(value.pre_hash as string) || !(/^$|^0x[0-9a-f]{64}$/.test(value.tx_hash as string))) {
-    throw new Error("CORRUPT_JOURNAL");
-  }
-  if (!Number.isSafeInteger(value.created_ms)) {
     throw new Error("CORRUPT_JOURNAL");
   }
   if (!["SIGNING", "SUBMITTED", "RECONCILE", "VERIFIED", "FINALIZED_ERROR"].includes(status)) {
@@ -124,7 +122,7 @@ export function enumerateJournal(): JournalRecord[] {
     if (raw === null) throw new Error("CORRUPT_JOURNAL");
     records.push(parseStoredRecord(key, raw));
   }
-  return records.sort((a, b) => a.created_ms - b.created_ms);
+  return records.sort((a, b) => Number(BigInt(a.created_ms) - BigInt(b.created_ms)));
 }
 
 function writeIndex(store: Storage, records: JournalRecord[]): void {
@@ -178,7 +176,7 @@ export async function reserveJournal(input: JournalReservation): Promise<Journal
       ...recordInput,
       v: 1,
       reservation: randomReservation(),
-      created_ms: now,
+      created_ms: String(now),
     };
     store.setItem(journalKey(record.reservation), JSON.stringify(record));
     writeIndex(store, [...records, record]);
@@ -196,6 +194,9 @@ export async function updateJournal(
     const raw = store.getItem(key);
     if (raw === null) throw new Error("JOURNAL_NOT_FOUND");
     const current = parseStoredRecord(key, raw);
+    if (current.tx_hash !== "" && update.tx_hash !== undefined && update.tx_hash !== current.tx_hash) {
+      throw new Error("IMMUTABLE_TX_HASH");
+    }
     const next = validateJournalRecord({ ...current, ...update });
     store.setItem(key, JSON.stringify(next));
     return next;

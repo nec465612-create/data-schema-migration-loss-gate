@@ -64,6 +64,21 @@ dd { font-size: .84rem; margin: 4px 0 0; overflow-wrap: anywhere; }
 .record-view { background: #0f172a; border-radius: 12px; color: #d1fae5; font-size: .76rem; margin: 18px 0 0; max-height: 360px; overflow: auto; padding: 16px; }
 .status-line { background: #e2e8f0; border-radius: 12px; color: #334155; margin-top: 20px; padding: 12px 14px; }
 .error-text { color: #b91c1c; display: block; font-weight: 700; margin-top: 5px; }
+.transaction-progress { background: #fff; border: 1px solid #cbd5e1; border-radius: 16px; margin-top: 20px; padding: 16px; }
+.transaction-progress.is-pending { border-color: #5eead4; box-shadow: 0 8px 24px rgba(13, 148, 136, .08); }
+.transaction-progress.is-success { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+.transaction-progress.is-rejected, .transaction-progress.is-failed { background: #fff7ed; border-color: #fdba74; color: #9a3412; }
+.transaction-progress.is-reconciliation_required { background: #fff7ed; border-color: #fb923c; color: #9a3412; }
+.transaction-progress__heading { align-items: center; display: flex; gap: 9px; }
+.transaction-progress__heading strong { font-size: .98rem; }
+.transaction-progress__phase { color: #64748b; font-size: .7rem; font-weight: 800; letter-spacing: .08em; margin-left: auto; }
+.transaction-progress p { color: #475569; margin: 8px 0 0; }
+.transaction-progress__hash { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.transaction-progress__hash code { background: #f1f5f9; border-radius: 7px; color: #0f172a; font-size: .75rem; overflow-wrap: anywhere; padding: 7px 9px; }
+.transaction-progress__warning { color: #9a3412 !important; font-weight: 700; }
+.transaction-progress__spinner { animation: transaction-spin 1s linear infinite; border: 2px solid #99f6e4; border-radius: 50%; border-top-color: #0f766e; height: 16px; width: 16px; }
+@keyframes transaction-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .transaction-progress__spinner { animation: none; } }
 
 @media (max-width: 850px) {
   .hero, .notice { align-items: flex-start; flex-direction: column; }
