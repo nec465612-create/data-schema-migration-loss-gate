@@ -201,7 +201,7 @@ The local tests cover contract lifecycle, authorization/CAS/no-write behavior, d
 
 Classification is `INTENTIONALLY FROZEN`; Stage 2 advertises no upgrade mechanism and the source exposes no upgrade storage or method. The recorded user authorization and decision require a replacement contract deployment plus new frontend/address verification for any post-deployment defect. The journal can reconcile retained history but cannot repair the frozen contract, and no recovery across reset, lost account, or changed network is claimed. The selected Studio account is `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902` for deployer role, and `OBSERVABLE_ACTION_LEDGER` is locked with no physical-count claim. This package contains no contract address, signature, deployment transaction, receipt, Explorer/RPC result, GitHub target, Vercel target, or public release URL.
 
-Studio account: `NOT_LOCKED`.
+Studio account: `LOCKED` — `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`; intended role `deployer`; upgrader `NOT APPLICABLE` for `INTENTIONALLY FROZEN`; measurement mode `OBSERVABLE_ACTION_LEDGER`; probe `2026-09-06T02:01:17.3913691+07:00`; physical-count claim `NONE`.
 Current anonymous Build reviewer route: `codex://threads/01a0725b-91de-7602-85fe-7bc72d414ad9`.
 Claude presentation phase: `PROMPT READY — NO CLAUDE RESULT RELAYED`; the bounded prompt permits only `frontend/src/App.tsx`, `frontend/src/styles.css`, and optional local assets. It does not replace primary integration review or authorize a gate.
 
