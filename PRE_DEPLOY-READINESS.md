@@ -2,7 +2,7 @@
 
 `DOCUMENT_STATUS: PRE_DEPLOY_READINESS_NOT_APPROVED`
 
-This package is a local exact-revision candidate for anonymous PRE_DEPLOY review. It is not PRE_DEPLOY approval, deployment approval, live evidence, or release approval. The current reviewer route, complete Studio RPC matrix, and Claude presentation relay remain open gates.
+This package is a local exact-revision candidate for anonymous PRE_DEPLOY review. It is not PRE_DEPLOY approval, deployment approval, live evidence, or release approval. The current reviewer route, later live Studio evidence, and Claude presentation relay remain open gates.
 
 ## Scope and classification
 
@@ -59,6 +59,7 @@ STAGE-2.md SHA-256:                  A44237E81EB8C9336F3AC74444BFE7972D2DF165377
 | Unsafe HTML scan | `rg -n "dangerouslySetInnerHTML|innerHTML|innerText|eval\\(" frontend/src frontend/tests` | No matches |
 | Journal key scan | `rg -n "glj1:.*operationFingerprint|operationFingerprint.*glj1:|key.*operationFingerprint" frontend/src frontend/tests` | No matches |
 | Studio capability probe | In-App Browser read-only probe on `https://studio.genlayer.com/contracts` | PASS; `OBSERVABLE_ACTION_LEDGER` locked; no physical-count claim |
+| Studio RPC matrix | `docs/RPC-BUDGET.md` exact-source review | PASS; numeric per-transition ceilings, terminal conditions, retry/cooldown, and expected transaction totals recorded |
 
 The frontend unit result includes journal integrity, caller-fingerprint validation, finalized-status/historical-readback reconciliation, mixed-context quarantine, export-before-archive enforcement, quota, hidden-tab polling pause, cancellation teardown, bounded transient receipt retry, and all required transaction-progress phase vocabulary checks. The browser smoke suite confirms no startup RPC request, disabled signing until journal initialization is healthy, and reload restoration of a retained journal entry with archive locked until export.
 
@@ -126,7 +127,7 @@ docs/STUDIO-E2E-PLAN.md
 
 ## Required review/deployment boundary
 
-No deployment, signature, contract write, GitHub publication, Vercel publication, or live Studio claim is authorized by this document. The selected Studio account and pre-E2E measurement mode are recorded, but the numeric Studio matrix, PRE_DEPLOY approval, deployment, and live evidence remain open. The next gate is one current anonymous PRE_DEPLOY review bound to the final exact source revision and this package. The old reviewer route in the pasted handoff is for a different project and must not be used.
+No deployment, signature, contract write, GitHub publication, Vercel publication, or live Studio claim is authorized by this document. The selected Studio account, pre-E2E measurement mode, and numeric Studio matrix are recorded, but PRE_DEPLOY approval, deployment, and live evidence remain open. The next gate is one current anonymous PRE_DEPLOY review bound to the final exact source revision and this package. The old reviewer route in the pasted handoff is for a different project and must not be used.
 
 ## Later Studio E2E plan
 

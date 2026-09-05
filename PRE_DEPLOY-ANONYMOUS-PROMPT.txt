@@ -9,7 +9,7 @@ CATEGORY: PROJECT
 CHECKPOINT: PRE_DEPLOY
 SOURCE REVISION: ab4be75dd07e2f743174f786cce39765418424a9
 PACKAGE: DSM-LG-PREDEPLOY-AB4BE75
-STATUS: corrective delta for F-011 Studio account and measurement capability record; send only to the retained reviewer route
+STATUS: corrective delta for F-012 numeric Studio RPC budget matrix; send only to the retained reviewer route
 
 ## Objective
 
@@ -157,6 +157,10 @@ The package records C3 as `INTENTIONALLY FROZEN` because the approved Stage 2 pu
 
 The primary AI selected the currently accessible Studio account `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902` from the read-only `https://studio.genlayer.com/contracts` page and recorded it as the intended `deployer`; no upgrader role applies to this `INTENTIONALLY FROZEN` contract. The pre-E2E capability probe completed at `2026-09-06T02:01:17.3913691+07:00`: the In-App Browser exposed no physical request-level telemetry, so the package locks `OBSERVABLE_ACTION_LEDGER` with no physical-count claim. No signature, deployment, contract write, or wallet transaction was initiated. No ABI signature, storage type, method, or transaction envelope changed.
 
+### F-012 correction delta
+
+`docs/RPC-BUDGET.md` now contains the locked `STUDIO RPC BUDGET MATRIX` for `OBSERVABLE_ACTION_LEDGER`: every unique write has explicit submission, maximum three status-poll attempts at bounded 2/4/8-second slots, one terminal receipt read, authoritative readback count, retry/cooldown rule, maximum observable call total, and transaction count. Create has two authoritative reads (`get_id_by_nonce` plus `get_version`); wrong-actor, stale-revision, and too-early-cooldown controls include pre/post unchanged-state reads; transient errors consume existing poll slots with bounded backoff and no blind retry. No Studio row has been executed. No ABI signature, storage type, method, or transaction envelope changed.
+
 1. The installed Direct Mode runner presents fixture addresses as 20-byte values in local tests. The contract converts either bytes or production-shaped strings to lowercase `0x`-hex before storage, actor checks, indexes, and hashes. This is a local runtime representation adaptation, not a public ABI change.
 2. The reducer fixes structural consequences deterministically and sends only compatible rows to the semantic path. This prevents model output from converting a known structural loss into success.
 3. The installed browser package is `genlayer-js` 1.1.8. `VITE_CONTRACT_ADDRESS` is fail-closed until an exact deployment address exists.
@@ -205,7 +209,7 @@ Studio account: `LOCKED` — `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`; inten
 Current anonymous Build reviewer route: `codex://threads/01a0725b-91de-7602-85fe-7bc72d414ad9`.
 Claude presentation phase: `PROMPT READY — NO CLAUDE RESULT RELAYED`; the bounded prompt permits only `frontend/src/App.tsx`, `frontend/src/styles.css`, and optional local assets. It does not replace primary integration review or authorize a gate.
 
-The independent RPC package is `docs/RPC-BUDGET.md`. Its frontend budget is local-only at this checkpoint: landing 0, explicit list/detail reads 1 each, wallet chain read 1, and each write at most 1 submission plus 3 bounded receipt queries plus 2 bounded readbacks; hidden-tab pause and abort/session teardown prevent further automatic polling, while transient receipt errors use bounded backoff within those same receipt slots. Studio budget is planned but not live-measured. The full planned Studionet sequence is `docs/STUDIO-E2E-PLAN.md`.
+The independent RPC package is `docs/RPC-BUDGET.md`. Its frontend budget is local-only at this checkpoint: landing 0, explicit list/detail reads 1 each, wallet chain read 1, and each write at most 1 submission plus 3 bounded receipt queries plus 2 bounded readbacks; hidden-tab pause and abort/session teardown prevent further automatic polling, while transient receipt errors use bounded backoff within those same receipt slots. Its Studio matrix is now numerically locked for `OBSERVABLE_ACTION_LEDGER`, with no physical-count claim and no executed Studio row. The full planned Studionet sequence is `docs/STUDIO-E2E-PLAN.md`.
 
 ## Official references checked for this package
 

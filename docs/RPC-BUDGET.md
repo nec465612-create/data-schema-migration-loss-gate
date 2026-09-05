@@ -36,17 +36,31 @@ STUDIO_E2E_STATUS: NOT_STARTED
 
 The probe used only read-only page inspection. `browser.capabilities.list()` exposed visibility/viewport, `tab.capabilities.list()` exposed page-assets/WebMCP, the page evaluation exposed no performance resource API in the browser sandbox, and `tab.dev.logs()` exposed console logs but no request-event stream. Therefore this package locks `OBSERVABLE_ACTION_LEDGER` and makes no physical-network-count claim. The future ledger must record every primary-AI Studio action, status-poll attempt, terminal receipt read, authoritative readback, retry, transaction hash, duplicate-transaction count, and matrix variance.
 
-## Studio budget
+## STUDIO RPC BUDGET MATRIX
 
-| Flow row | Planned maximum | Required evidence |
-|---|---:|---|
-| Health/network preflight | 1 bounded read | Endpoint, chain ID, timestamp, response status |
-| Deploy | 1 write | Deployment transaction hash, finalized successful execution |
-| Source/schema parity | 1 authoritative read | `gen_getContractSchema` result bound to the exact source revision |
-| Each contract write | 1 write + bounded status/readback | Finality, execution result, post-state/readback, exact hash |
-| Wrong actor/stale revision negative controls | 1 write each | Reverted/failed execution and unchanged authoritative state |
+The following is the locked pre-E2E ceiling for the `OBSERVABLE_ACTION_LEDGER` mode. These are planned observable RPC-call ceilings, not physical-network measurements. Every status poll uses the same hash, at most three attempts at base delays `2s/4s/8s` with bounded transient-error backoff/jitter, and stops immediately on a terminal status, rate-limit cooldown, or actual blocker. A terminal receipt is fetched at most once after a terminal status. No automatic retry or replacement transaction is permitted.
 
-No Studio row is claimed as executed yet. Any live measurement must use one fresh Studio tab/account, bounded polling, cached verified receipts, and no blind retry or reset/redeploy.
+| Flow / unique action | Pre/post authoritative reads | Submission txs | Status polls | Terminal receipt reads | Retry/cooldown | Maximum observable RPC calls | Expected txs |
+|---|---:|---:|---:|---:|---|---:|---:|
+| Health/network preflight | 1 chain/status read | 0 | 0 | 0 | none | 1 | 0 |
+| Selected account/role check | 0 (Studio UI identity read) | 0 | 0 | 0 | none | 0 | 0 |
+| Deploy exact source | 1 `gen_getContractSchema` parity read | 1 | 3 | 1 | no retry; retain deploy hash on uncertainty | 6 | 1 |
+| Create case (`create_schema_case`) | 2 (`get_id_by_nonce` + `get_version`) | 1 | 3 | 1 | no retry; nonce readback is authoritative | 7 | 1 |
+| Replace schemas (`replace_schemas`) | 1 `get_version` | 1 | 3 | 1 | no automatic retry | 6 | 1 |
+| Lock schemas (`lock_schemas`) | 1 `get_version` | 1 | 3 | 1 | no automatic retry | 6 | 1 |
+| Put mapping (`put_mapping`) | 1 `get_version` | 1 | 3 | 1 | no automatic retry | 6 | 1 |
+| Freeze mapping (`freeze_mapping`) | 1 `get_version` | 1 | 3 | 1 | no automatic retry | 6 | 1 |
+| Evaluate compatible mapping (`evaluate_migration`) | 1 `get_version` | 1 | 3 | 1 | no automatic retry | 6 | 1 |
+| Evaluate structural-loss mapping (`evaluate_migration`) | 1 `get_version` | 1 | 3 | 1 | no automatic retry | 6 | 1 |
+| Live semantic UNKNOWN (`evaluate_migration`, only if returned) | 1 `get_version` | 1 | 3 | 1 | no automatic retry | 6 | 1 |
+| Accepted retry (`retry_migration`, only after 60s tx-time cooldown) | 1 `get_version` | 1 | 3 | 1 | one explicit user/test action only; no automatic retry | 6 | 1 |
+| Wrong-actor negative control | 2 (`get_version` before/after) | 1 | 3 | 1 | no retry; unchanged-state readback required | 7 | 1 |
+| Stale-revision negative control | 2 (`get_version` before/after) | 1 | 3 | 1 | no retry; unchanged-state readback required | 7 | 1 |
+| Too-early retry/cooldown negative control, if exercised | 2 (`get_version` before/after) | 1 | 3 | 1 | do not repeat; contract cooldown is the terminal result | 7 | 1 |
+
+Terminal success requires `FINALIZED`, semantic execution success, consensus/finality where applicable, and the exact authoritative readback. `DROPPED`, rejected/failed execution, undetermined status, exhausted poll budget, transport-error exhaustion, or readback mismatch stops the row and preserves the hash/evidence; it never authorizes a replacement write. A `429` or transient transport error consumes the current bounded poll slot and uses `Retry-After` when exposed or bounded exponential backoff with jitter; it does not add poll slots. The create row's second read is required because the ID must be resolved by nonce and then verified historically.
+
+No Studio row is claimed as executed yet. The future ledger must record each listed action, poll attempt, terminal receipt, authoritative read, transaction hash, duplicate-transaction count, retry, and matrix variance without converting these ceilings into a physical-request count.
 
 ## Acceptance boundary
 

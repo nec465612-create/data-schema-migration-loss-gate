@@ -69,6 +69,10 @@ The package records C3 as `INTENTIONALLY FROZEN` because the approved Stage 2 pu
 
 The primary AI selected the currently accessible Studio account `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902` from the read-only Studio contracts page and recorded it as the intended `deployer`; no upgrader role applies to this `INTENTIONALLY FROZEN` contract. The pre-E2E capability probe completed at `2026-09-06T02:01:17.3913691+07:00`: the In-App Browser exposed no physical request-level telemetry, so the package locks `OBSERVABLE_ACTION_LEDGER` with no physical-count claim. No signature, deployment, contract write, or wallet transaction was initiated.
 
+### F-012 numeric Studio RPC budget matrix
+
+`docs/RPC-BUDGET.md` now contains the locked `STUDIO RPC BUDGET MATRIX` for `OBSERVABLE_ACTION_LEDGER`: every unique write has explicit submission, maximum three status-poll attempts at bounded 2/4/8-second slots, one terminal receipt read, authoritative readback count, retry/cooldown rule, maximum observable call total, and transaction count. Create has two authoritative reads (`get_id_by_nonce` plus `get_version`); wrong-actor, stale-revision, and too-early-cooldown controls include pre/post unchanged-state reads; transient errors consume existing poll slots with bounded backoff and no blind retry. No Studio row has been executed.
+
 ## Preserved binding requirements
 
 - Exact persistent storage and public method signatures from Stage 2.
