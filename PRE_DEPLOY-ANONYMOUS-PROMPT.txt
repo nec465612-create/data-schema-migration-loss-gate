@@ -108,6 +108,7 @@ PRE_DEPLOY-READINESS.md
 docs/RPC-BUDGET.md
 docs/STUDIO-E2E-PLAN.md
 FRONTEND-DESIGN-RATIONALE.md
+DESIGN.md
 CLAUDE-FRONTEND-REDESIGN-PROMPT.txt
 ```
 
@@ -209,7 +210,7 @@ Classification is `INTENTIONALLY FROZEN`; Stage 2 advertises no upgrade mechanis
 
 Studio account: `LOCKED` — `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`; intended role `deployer`; upgrader `NOT APPLICABLE` for `INTENTIONALLY FROZEN`; measurement mode `OBSERVABLE_ACTION_LEDGER`; probe `2026-09-06T02:01:17.3913691+07:00`; physical-count claim `NONE`.
 Current anonymous Build reviewer route: `codex://threads/01a0725b-91de-7602-85fe-7bc72d414ad9`.
-Claude presentation phase: `PROMPT READY — NO CLAUDE RESULT RELAYED`; the bounded prompt permits only `frontend/src/App.tsx`, `frontend/src/styles.css`, and optional local assets. It does not replace primary integration review or authorize a gate.
+Claude presentation phase: `MANUAL HANDOFF PROMPT REVISED — ITERATION 1/2 — NO CLAUDE RESULT RELAYED`; `DESIGN.md` records the product-specific brief and negative constraints; the bounded prompt permits only `frontend/src/App.tsx`, `frontend/src/styles.css`, and optional local assets. It does not replace primary integration review or authorize a gate.
 
 The independent RPC package is `docs/RPC-BUDGET.md`. Its frontend budget is local-only at this checkpoint: landing 0, explicit list/detail reads 1 each, wallet chain read 1, and each write at most 1 submission plus 3 bounded receipt queries plus 2 bounded readbacks; hidden-tab pause and abort/session teardown prevent further automatic polling, while transient receipt errors use bounded backoff within those same receipt slots. Its Studio matrix is numerically complete for `OBSERVABLE_ACTION_LEDGER`, but the matrix-before-opening sequencing breach is recorded, no physical-count claim is made, no Studio row was executed, and further Studio action is blocked pending reviewer disposition. The full planned Studionet sequence is `docs/STUDIO-E2E-PLAN.md`.
 

@@ -140,5 +140,5 @@ After exact PRE_DEPLOY approval, the primary AI will execute the rows in `docs/S
 ## Open handoffs
 
 - Current anonymous Build reviewer route: `codex://threads/01a0725b-91de-7602-85fe-7bc72d414ad9`.
-- Claude presentation phase: `PROMPT READY — NO CLAUDE RESULT RELAYED`; see `CLAUDE-FRONTEND-REDESIGN-PROMPT.txt`.
+- Claude presentation phase: `MANUAL HANDOFF PROMPT REVISED — ITERATION 1/2 — NO CLAUDE RESULT RELAYED`; see `DESIGN.md` and `CLAUDE-FRONTEND-REDESIGN-PROMPT.txt`.
 - Studio account: `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`, intended role `deployer`; `OBSERVABLE_ACTION_LEDGER` capability mode locked; not deployed.

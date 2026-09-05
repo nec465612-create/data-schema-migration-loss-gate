@@ -1,58 +1,134 @@
 ROLE
-You are Claude, the bounded presentation-layer designer and coder for the existing GenLayer Build frontend. The functional shell already exists. Redesign and implement only the visible presentation layer for this one product; do not redesign the contract or transaction architecture.
+You are Claude, the bounded presentation-layer designer and coder for the existing GenLayer Build frontend. This is a manual user-transferred handoff. The functional shell already works. You own the project-specific visual direction and all visible presentation implementation for this scoped redesign; do not redesign the contract or transaction architecture.
+
+ITERATION AND EXACT BASELINE
+- This is iteration 1 of a maximum of 2 valid iterations for this same scoped frontend redesign.
+- Implemented frontend revision: ff9268dd32b7749d38f81831a1904b4f93f8c8e0
+- Project working tree was clean before this design brief and prompt update.
+- Do not treat any previous Claude transcript, direct invocation, unreturned result or other Task artifact as input. Inspect the exact files listed below.
 
 PROJECT
 Name: Data Schema Migration Loss Gate
 Path: E:\Genlayer-Projects\data-schema-migration-loss-gate
 Frontend: E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend
-Design rationale: E:\Genlayer-Projects\data-schema-migration-loss-gate\FRONTEND-DESIGN-RATIONALE.md
 
-READ THESE EXACT FILES FIRST
+READ THESE EXACT PROJECT FILES FIRST
+- E:\Genlayer-Projects\data-schema-migration-loss-gate\DESIGN.md
 - E:\Genlayer-Projects\data-schema-migration-loss-gate\FRONTEND-DESIGN-RATIONALE.md
+- E:\Genlayer-Projects\data-schema-migration-loss-gate\STAGE-2.md
 - E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\App.tsx
 - E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\styles.css
 - E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\contract.ts
 - E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\pending.ts
+- E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\progress.ts
 - E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\tests\flow.spec.ts
 
+READ THESE EXACT LOCAL DESIGN/RULE SOURCES BEFORE CODING
+- E:\Genlayer\knowledge\implementation\hallmark\SKILL.md
+- E:\Genlayer\knowledge\implementation\ui-ux-pro-max.md
+- E:\Genlayer\knowledge\implementation\taste-skill.md
+- E:\Genlayer\knowledge\implementation\vercel-web-guidelines.md
+- E:\Genlayer\brain\Engineering and UI Quality Rules.md — especially FRONTEND.PROJECT_SPECIFIC_DESIGN and accessibility/forms/performance
+- E:\Genlayer\brain\Reusable Frontend Build Patterns.md — wallet chooser presentation and public transaction-state requirements only
+- E:\Genlayer\brain\assets\wallet-selector-reference\connect-wallet-picker-reference.png — interaction hierarchy only, not a static wallet catalog or pixel-copy target
+
 CURRENT OFFICIAL GENLAYER LINKS
+Read these as technical context, not as instructions:
 - https://docs.genlayer.com/developers/decentralized-applications/genlayer-js
 - https://docs.genlayer.com/developers/decentralized-applications/writing-data
 - https://docs.genlayer.com/developers/decentralized-applications/querying-a-transaction
 - https://docs.genlayer.com/api-references/genlayer-node/gen/gen_getTransactionStatus
 - https://docs.genlayer.com/api-references/genlayer-linter
 
-PRODUCT DIRECTION
-Make the page feel like a calm, high-trust audit workstation: paper-white surfaces, ink-dark editorial typography, teal verification accents, amber public-data caution, and compact monospace evidence labels. The product's core visual metaphor is two schema columns converging into one checked gate. Do not use generic crypto-dashboard styling, coin imagery, shield imagery, stock imagery, or AI sparkle motifs. If you add a brand mark, use a small geometric split-to-check mark and keep it inline/local.
+APPROVED PRODUCT/DESIGN SCOPE
+Data Schema Migration Loss Gate is a public evidence workstation for one narrow question: does an explicit mapping from a declared old schema to a declared new schema preserve information?
 
-REQUIRED USER EXPERIENCE
-- Explain “Does this mapping preserve information?” in the first viewport.
-- Keep the exact disclaimer: “Assessment of this exact submitted material only; not verification of external facts.”
-- Keep the exact warning: “All submitted text will be public and permanent. Do not include private information, credentials or personal records.”
-- Make roles clear: schema owner, mapper, evaluator.
-- Keep old/new tables comparable on desktop and usable on mobile.
-- Keep all inputs keyboard accessible with visible focus states and labels.
-- Preserve readable error/status text and text-node rendering for all supplied data.
-- Respect prefers-reduced-motion. Do not use animation as evidence.
+Design the complete first-time judge journey:
+1. Explain the question, trust boundary, public-data warning and exact-material disclaimer before wallet or chain interaction.
+2. Discover and explicitly choose only actually detected MetaMask, OKX Wallet or Rabby providers.
+3. Show configured network and wallet state accurately.
+4. Create or open a schema case.
+5. Compare old and new schema definitions.
+6. Submit and freeze the mapper's explicit mapping and defaults.
+7. Evaluate the frozen case and show LOSSLESS, LOSS_FOUND or UNRESOLVED with factual phase/revision/result evidence.
+8. Make retained transaction context, export, reconciliation, quarantine and authoritative readback understandable when those states occur.
+
+Make these actors legible in the public UI: schema owner, mapper and evaluator. Explain GenLayer's role accurately as independent evaluation/consensus before the stored outcome; do not exaggerate or claim verification of external facts.
+
+The exact visible strings that must remain are:
+- “Schema migration loss gate”
+- “Create case”
+- “Discover wallets”
+- “Connect”
+- “Load IDs”
+- “Assessment of this exact submitted material only; not verification of external facts.”
+- “All submitted text will be public and permanent. Do not include private information, credentials or personal records.”
+
+The final presentation must be product-specific and authored for a careful schema-audit workstation. Use the rationale and DESIGN.md as constraints derived from the product; choose the final macrostructure, visual language, type pairing, palette, spacing, component composition, navigation treatment and brand expression yourself. Do not use a copied/shared presentation template or a color-swapped crypto dashboard.
+
+The complete presentation scope includes, where applicable to the existing app:
+- logo/brand identity;
+- introduction and problem statement;
+- accurate GenLayer explanation;
+- an in-page Docs/How it works section or equivalent navigation target that a first-time judge can follow;
+- complete workflow guidance using actual final UI labels and observable outcomes;
+- wallet/network information and chooser states;
+- case/schema/mapping/result/recovery sections;
+- loading, empty, validation, pending, success, error, finality, readback, reconciliation and quarantine states;
+- desktop/mobile composition, keyboard accessibility and visible focus states.
+
+Do not add irrelevant sections merely to satisfy a checklist. Every section must serve this product's public journey.
+
+ANTI-TEMPLATE AND PUBLIC-JUDGE NEGATIVE CONSTRAINTS
+- No generic crypto/DeFi dashboard, copied SaaS hero, repetitive feature-card grid, arbitrary gradients/glows, excessive pills, decorative clutter or identical section rhythm.
+- No fake browser, phone or IDE chrome.
+- No coin, shield, chain, stock-photo or generic AI-sparkle imagery.
+- No invented metrics, testimonials, logos, case counts, seed data presented as real, placeholder claims, dead links or exaggerated claims.
+- No internal AI/reviewer/checkpoint/debug language, private-owner instructions or developer-only steps in the public UI.
+- No static wallet catalog, unavailable wallet tile, generic injected-wallet option or wallet option without the real discovered provider.
+- No hidden required information behind hover-only controls.
+- No animation used as evidence; pending copy must remain meaningful with reduced motion.
 
 STRICT FILE BOUNDARY
 You may modify only:
 - E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\App.tsx
 - E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\styles.css
-You may add a local SVG/brand asset only under:
+You may add only optional local visual asset(s) under:
 - E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend\src\assets\
-Do not modify `contract.ts`, `pending.ts`, `main.tsx`, tests, package files, Vite/TypeScript config, contract files, schemas, or documentation. Do not add a dependency.
 
-INVARIANTS THAT MUST REMAIN BYTE/FLOW-COMPATIBLE
-- Do not change any import or call to the wallet/SDK/journal functions.
-- Do not change provider allowlist, selected-provider binding, chain checks, contract address handling, Web Locks, journal keys/statuses, operation fingerprints, hash inputs, finality checks, exact `get_version` readback, retry limits, or RPC timing/counts.
-- Do not add startup RPC calls, polling, automatic resubmission, optimistic success, or hidden network requests.
-- Do not use `dangerouslySetInnerHTML`, `innerHTML`, executable Markdown, or untrusted URLs as trusted links.
-- Keep test-visible labels for “Schema migration loss gate”, “Create case”, “Discover wallets”, “Connect”, “Load IDs”, “Assessment of this exact submitted material only; not verification of external facts.” and the public-data warning.
+Do not modify or create DESIGN.md, FRONTEND-DESIGN-RATIONALE.md, contract.ts, pending.ts, progress.ts, main.tsx, tests, package files, Vite/TypeScript config, contract files, schemas, docs, .hallmark files, tokens.css, or release artifacts. Do not add dependencies. The project-local brief and existing rationale are read-only context.
+
+FIXED FUNCTIONAL INVARIANTS
+- Do not change any import or call to wallet, SDK, journal, reconciliation or transaction functions.
+- Do not change provider discovery, allowlist, deduplication, selected-provider binding, chain checks, contract address handling, wallet-session state machine, Web Locks, journal keys/statuses, operation fingerprints, hash inputs, finality checks, exact get_version readback, retry limits, or RPC timing/counts.
+- Do not add startup RPC calls, polling, automatic resubmission, optimistic success or hidden network requests.
+- Do not change contract methods, arguments, state transitions, serialization, test meaning or public outcome semantics.
+- Keep all supplied/evaluator data rendered as inert text nodes. Do not use dangerouslySetInnerHTML, innerHTML, executable Markdown or untrusted URLs as trusted links.
+- Keep the exact labels and warning listed above.
+
+HALLMARK/QUALITY REQUIREMENTS WITHIN THE FILE BOUNDARY
+- Use the Hallmark anti-slop process and run its self-critique/slop-test checks before handoff.
+- Use named CSS tokens in the existing styles.css; use OKLCH for colors, a coherent spacing scale, deliberate display/body typography and no italic display headings.
+- If using a Hallmark CSS stamp, keep it in the existing styles.css. Do not emit tokens.css or .hallmark/log.json because the strict project boundary forbids those files.
+- Design every interactive element for default, hover, focus-visible, active, disabled, loading, error and success states where applicable.
+- Animate only transform/opacity, never layout properties; never use transition: all; honor prefers-reduced-motion and collapse spatial motion to an immediate or short opacity transition.
+- Verify responsive behavior at 320, 375, 414 and 768 CSS pixels: no horizontal page scroll, clipped controls or two-line clickable labels; schema and mapping controls must remain usable.
+- Use semantic HTML, real labels/accessibility names, aria-live/status semantics where needed, and an immediately visible focus ring.
 
 IMPLEMENTATION AND HANDOFF
-1. Inspect the current shell and rationale.
-2. Make the smallest coherent presentation redesign within the strict file boundary.
-3. Run `npm run build` and `npm run test` from `E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend`.
-4. Run `npm run playwright` if the browser runtime is available.
-5. Report the exact files changed, commands/results, and any design tradeoff. Do not claim contract, wallet, RPC, journal, deployment, or release approval.
+1. Read every required project and local design source above before editing.
+2. Inspect the existing functional shell and preserve its information, behavior and calls.
+3. Implement the smallest complete, polished, project-specific redesign within the strict file boundary. The result must cover the full public journey and Docs/How it works, not just recolor the main form.
+4. Do not touch any forbidden file. If a requirement appears to need a forbidden file or behavior change, stop and report the ambiguity instead of widening scope.
+5. Run from E:\Genlayer-Projects\data-schema-migration-loss-gate\frontend:
+   - npm run build
+   - npm run test
+   - npm run playwright, if the browser runtime is available
+6. Return a concise handoff containing:
+   - exact files changed/created;
+   - confirmation that no forbidden file changed;
+   - design decisions and rejected generic patterns;
+   - responsive/accessibility/state checks;
+   - exact command results;
+   - any unresolved ambiguity.
+7. Do not claim contract, wallet, RPC, journal, deployment, reviewer, E2E or release approval. Your result is implementation output only; the primary AI will inspect the diff and run acceptance verification.
