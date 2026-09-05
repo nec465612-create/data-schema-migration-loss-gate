@@ -43,15 +43,26 @@ def _pairs_without_duplicates(pairs):
     return result
 
 
+def _normalize_crlf(value):
+    if isinstance(value, str):
+        return value.replace("\r\n", "\n")
+    if isinstance(value, list):
+        return [_normalize_crlf(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _normalize_crlf(item) for key, item in value.items()}
+    return value
+
+
 def _parse_json(raw: str, maximum: int):
     if not isinstance(raw, str) or len(raw.encode("utf-8")) > maximum:
         _fail("BAD_JSON")
     try:
-        return json.loads(
-            raw,
+        parsed = json.loads(
+            raw.replace("\r\n", "\n"),
             object_pairs_hook=_pairs_without_duplicates,
             parse_constant=_reject_constant,
         )
+        return _normalize_crlf(parsed)
     except Exception:
         _fail("BAD_JSON")
 

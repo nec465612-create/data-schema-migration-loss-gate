@@ -126,6 +126,37 @@ def test_create_two_party_case_and_exact_historical_readback(
     }
 
 
+def test_crlf_input_normalizes_before_freezing_and_hashing(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    base = schema(
+        [field("name", meaning="line one\r\nline two")],
+        [field("name", meaning="line one\r\nline two")],
+    )
+    raw_crlf_json = as_json(base).replace(",", ",\r\n")
+    contract = direct_deploy("contracts/main.py")
+    direct_vm.sender = direct_alice
+    case_id = contract.create_schema_case(
+        "b" * 32,
+        direct_bob,
+        raw_crlf_json,
+        0,
+    )
+
+    record = json.loads(contract.get_case(case_id))
+    frozen_base = json.loads(record["base"])
+    assert frozen_base["old"][0]["meaning"] == "line one\nline two"
+    assert frozen_base["new"][0]["meaning"] == "line one\nline two"
+
+    direct_vm.sender = direct_alice
+    contract.replace_schemas(case_id, as_json({
+        "old": [field("name", meaning="line one\nline two")],
+        "new": [field("name", meaning="line one\nline two")],
+    }), 1)
+    replaced = json.loads(contract.get_case(case_id))
+    assert json.loads(replaced["base"]) == frozen_base
+
+
 def test_drop_of_optional_field_is_loss_and_commits_history(
     direct_vm, direct_deploy, direct_alice, direct_bob
 ):
