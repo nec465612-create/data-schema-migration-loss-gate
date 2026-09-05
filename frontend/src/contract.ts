@@ -421,8 +421,75 @@ function providerRejected(error: unknown): boolean {
   return /reject|denied|cancel/i.test(errorText(error));
 }
 
-function wait(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new Error("WRITE_CANCELLED");
+}
+
+function documentHidden(): boolean {
+  return typeof document !== "undefined" && document.visibilityState === "hidden";
+}
+
+function wait(milliseconds: number, signal?: AbortSignal): Promise<void> {
+  throwIfAborted(signal);
+  if (milliseconds <= 0) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    let remaining = milliseconds;
+    let startedAt = 0;
+    let timer: number | null = null;
+    let settled = false;
+
+    const cleanup = () => {
+      if (timer !== null) window.clearTimeout(timer);
+      timer = null;
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisibility);
+      signal?.removeEventListener("abort", onAbort);
+    };
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve();
+    };
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error("WRITE_CANCELLED"));
+    };
+    const schedule = () => {
+      if (settled || documentHidden()) return;
+      startedAt = Date.now();
+      timer = window.setTimeout(finish, remaining);
+    };
+    const onVisibility = () => {
+      if (documentHidden()) {
+        if (timer !== null) {
+          window.clearTimeout(timer);
+          timer = null;
+          remaining = Math.max(0, remaining - (Date.now() - startedAt));
+        }
+      } else if (timer === null) {
+        if (remaining === 0) finish();
+        else schedule();
+      }
+    };
+
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisibility);
+    signal?.addEventListener("abort", onAbort, { once: true });
+    if (!documentHidden()) schedule();
+  });
+}
+
+function isTransientTransportError(error: unknown): boolean {
+  const candidate = error as { status?: unknown; statusCode?: unknown; code?: unknown };
+  const status = Number(candidate?.status ?? candidate?.statusCode);
+  if (status === 408 || status === 425 || status === 429 || status >= 500) return true;
+  return /429|busy|gateway|network|rate.?limit|timeout|temporar|transport|unavailable|fetch/i.test(errorText(error));
+}
+
+function boundedBackoff(milliseconds: number): number {
+  const jitter = Math.floor(Math.random() * Math.min(250, Math.max(1, Math.floor(milliseconds / 10))));
+  return Math.min(8000, milliseconds + jitter);
 }
 
 async function mark(reservation: string, status: JournalRecord["status"], txHash?: string): Promise<void> {
@@ -436,7 +503,9 @@ async function mark(reservation: string, status: JournalRecord["status"], txHash
 export async function writeAndVerify(
   request: WriteRequest,
   onProgress: (progress: WriteProgress) => void = () => undefined,
+  options: { signal?: AbortSignal } = {},
 ): Promise<{ record: JournalRecord; caseId: string; encoded: string }> {
+  throwIfAborted(options.signal);
   if (!writeClient || !walletSession) throw new Error("WALLET_NOT_CONNECTED");
   if (!walletSession.canWrite || !chainMatches(expectedChainId(), walletSession.chainId)) throw new Error("WRONG_CHAIN");
   const operationSession = walletSession;
@@ -454,6 +523,7 @@ export async function writeAndVerify(
   const contract = requireAddress();
   const argsJson = JSON.stringify(request.args, jsonReplacer);
   const argsHash = await sha256Utf8(canonicalJson(request.argsForHash));
+  throwIfAborted(options.signal);
   if (!contextIsCurrent()) throw new Error("WALLET_SESSION_CHANGED");
   const operationFingerprint = await sha256Utf8(JSON.stringify([
     String(chains[config.chainName].id),
@@ -482,8 +552,10 @@ export async function writeAndVerify(
       await mark(reserved.reservation, "RECONCILE", txHash);
       throw new Error("RECONCILE_WALLET_SESSION_CHANGED");
     }
+    throwIfAborted(options.signal);
   };
   try {
+    throwIfAborted(options.signal);
     if (!contextIsCurrent()) {
       await removeUnsignedJournal(reserved.reservation);
       reservationRemoved = true;
@@ -502,16 +574,24 @@ export async function writeAndVerify(
 
     let transaction: any = null;
     onProgress({ phase: "WAITING_FOR_FINALITY", hash: txHash });
-    for (const delay of [2000, 4000, 8000]) {
-      await wait(delay);
+    let lastReceiptError: unknown = null;
+    for (const baseDelay of [2000, 4000, 8000]) {
+      await wait(lastReceiptError ? boundedBackoff(baseDelay) : baseDelay, options.signal);
       await reconcileIfContextChanged();
-      transaction = await readClient.getTransaction({ hash: txHash });
+      try {
+        transaction = await readClient.getTransaction({ hash: txHash });
+        lastReceiptError = null;
+      } catch (error) {
+        if (!isTransientTransportError(error)) throw error;
+        lastReceiptError = error;
+        continue;
+      }
       await reconcileIfContextChanged();
       if (isFinalized(transaction)) break;
     }
     if (!isFinalized(transaction)) {
       await mark(reserved.reservation, "RECONCILE", txHash);
-      throw new Error("RECONCILE_RECEIPT_NOT_FINAL");
+      throw new Error(lastReceiptError ? "RECONCILE_RECEIPT_TRANSPORT" : "RECONCILE_RECEIPT_NOT_FINAL");
     }
     onProgress({ phase: "VERIFYING_EXECUTION", hash: txHash });
     if (transaction.txExecutionResultName !== ExecutionResult.FINISHED_WITH_RETURN) {
@@ -531,7 +611,7 @@ export async function writeAndVerify(
     let encoded = "null";
     onProgress({ phase: "VERIFYING_READBACK", hash: txHash });
     for (let attempt = 0; attempt < readAttempts; attempt += 1) {
-      if (attempt > 0) await wait(4000);
+      if (attempt > 0) await wait(4000, options.signal);
       await reconcileIfContextChanged();
       encoded = await readView("get_version", [BigInt(caseId), BigInt(revision)]);
       await reconcileIfContextChanged();
@@ -560,6 +640,9 @@ export async function writeAndVerify(
     if (txHash === "") {
       if (reservationRemoved) {
         onProgress({ phase: "FAILED", message: errorText(error) });
+      } else if (errorText(error) === "WRITE_CANCELLED") {
+        await mark(reserved.reservation, "RECONCILE");
+        onProgress({ phase: "RECONCILIATION_REQUIRED", message: errorText(error) });
       } else if (providerRejected(error)) {
         try { await removeUnsignedJournal(reserved.reservation); } catch { /* retain the original wallet error */ }
         onProgress({ phase: "REJECTED", message: errorText(error) });
@@ -570,6 +653,7 @@ export async function writeAndVerify(
     } else if (errorText(error).startsWith("FINALIZED_ERROR:")) {
       onProgress({ phase: "FAILED", hash: txHash, message: errorText(error) });
     } else {
+      await mark(reserved.reservation, "RECONCILE", txHash);
       onProgress({ phase: "RECONCILIATION_REQUIRED", hash: txHash, message: errorText(error) });
     }
     throw new Error(errorText(error));

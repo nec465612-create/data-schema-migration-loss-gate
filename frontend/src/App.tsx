@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import {
   canonicalJson,
@@ -141,6 +141,7 @@ function App() {
   const [journalReadbacks, setJournalReadbacks] = useState<Record<string, string>>({});
   const [journalExported, setJournalExported] = useState<Record<string, boolean>>({});
   const [progress, setProgress] = useState<WriteProgress>({ phase: "IDLE" });
+  const writeAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     void rebuildJournalIndex()
@@ -155,8 +156,16 @@ function App() {
       });
   }, []);
 
+  useEffect(() => () => writeAbortRef.current?.abort(), []);
+
   const basePayload = useMemo(() => ({ old: oldFields, new: newFields }), [oldFields, newFields]);
   const responsePayload = useMemo(() => ({ mapping: mappingRows, defaults }), [mappingRows, defaults]);
+  const sessionKey = `${connection?.account ?? ""}:${connection?.chainId ?? ""}`;
+  const previousSessionKey = useRef(sessionKey);
+  useEffect(() => {
+    if (previousSessionKey.current !== sessionKey) writeAbortRef.current?.abort();
+    previousSessionKey.current = sessionKey;
+  }, [sessionKey]);
   const onCorrectChain = Boolean(connection && chainMatches(connection.expectedChainId, connection.chainId));
   const canWrite = connection?.canWrite === true;
   const account = connection?.account ?? null;
@@ -231,8 +240,10 @@ function App() {
     if (!journalReady) { setError("Journal lock unavailable; signing is disabled."); return; }
     setProgress({ phase: "IDLE" });
     setBusy(true);
+    const controller = new AbortController();
+    writeAbortRef.current = controller;
     try {
-      const result = await writeAndVerify(request, setProgress);
+      const result = await writeAndVerify(request, setProgress, { signal: controller.signal });
       setCaseId(result.caseId);
       const record = JSON.parse(result.encoded) as Record<string, any>;
       setCaseRecord(record);
@@ -245,7 +256,10 @@ function App() {
       }
       setMessage(`${request.method}: VERIFIED from exact historical readback at revision ${record.revision}.`);
     } catch (caught) { setError(String(caught)); }
-    finally { setBusy(false); }
+    finally {
+      if (writeAbortRef.current === controller) writeAbortRef.current = null;
+      setBusy(false);
+    }
   }
 
   async function reconcileJournal() {
