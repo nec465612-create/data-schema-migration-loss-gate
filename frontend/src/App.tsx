@@ -16,11 +16,18 @@ import {
 } from "./contract";
 import { rebuildJournalIndex } from "./pending";
 import { isPendingPhase, PROGRESS_COPY, WriteProgress } from "./progress";
+import {
+  defaultMappingRow,
+  initialMappingRows,
+  isTargetAvailable,
+  MAX_MAPPING_ROWS,
+  MappingRow,
+  nextUnmappedOldId,
+} from "./mapping";
 import "./styles.css";
 
 type FieldType = "TEXT" | "INT" | "BOOL" | "ENUM";
 type Field = { id: string; type: FieldType; required: boolean; meaning: string; values: string[] };
-type MappingRow = { old_id: string; new_id: string; transform: "IDENTITY" | "RENAME" | "CAST" | "DROP" };
 type DefaultRow = { new_id: string; value: string };
 
 const blankField = (id: string): Field => ({ id, type: "TEXT", required: true, meaning: "same declared meaning", values: [] });
@@ -115,7 +122,7 @@ function App() {
   const [connection, setConnection] = useState<{ account: string; chainId: string; expectedChainId: string } | null>(null);
   const [oldFields, setOldFields] = useState(initialOld);
   const [newFields, setNewFields] = useState(initialNew);
-  const [mappingRows, setMappingRows] = useState<MappingRow[]>([{ old_id: "name", new_id: "name", transform: "IDENTITY" }]);
+  const [mappingRows, setMappingRows] = useState<MappingRow[]>(() => initialMappingRows(["name"], ["name"]));
   const [defaults, setDefaults] = useState<DefaultRow[]>([]);
   const [nonce, setNonce] = useState(cryptoRandomNonce());
   const [mapper, setMapper] = useState("");
@@ -195,7 +202,11 @@ function App() {
         setOldFields(record.base.old);
         setNewFields(record.base.new);
       }
-      if (record.response?.mapping) setMappingRows(record.response.mapping);
+      setMappingRows(initialMappingRows(
+        record.base?.old?.map((field: Field) => field.id) ?? [],
+        record.base?.new?.map((field: Field) => field.id) ?? [],
+        Array.isArray(record.response?.mapping) ? record.response.mapping : [],
+      ));
       if (record.response?.defaults) setDefaults(record.response.defaults);
       setMessage(`Case ${id} loaded from one explicit detail read.`);
     } catch (caught) { setError(String(caught)); }
@@ -213,8 +224,16 @@ function App() {
     try {
       const result = await writeAndVerify(request, setProgress);
       setCaseId(result.caseId);
-      setCaseRecord(JSON.parse(result.encoded));
-      setMessage(`${request.method}: VERIFIED from exact historical readback at revision ${JSON.parse(result.encoded).revision}.`);
+      const record = JSON.parse(result.encoded) as Record<string, any>;
+      setCaseRecord(record);
+      if (request.method === "create_schema_case" || request.method === "replace_schemas") {
+        setMappingRows(initialMappingRows(
+          record.base?.old?.map((field: Field) => field.id) ?? [],
+          record.base?.new?.map((field: Field) => field.id) ?? [],
+        ));
+        setDefaults([]);
+      }
+      setMessage(`${request.method}: VERIFIED from exact historical readback at revision ${record.revision}.`);
     } catch (caught) { setError(String(caught)); }
     finally { setBusy(false); }
   }
@@ -270,6 +289,15 @@ function App() {
       caseId,
       verify: (record) => record.phase === "RESPONSE_DRAFT" && record.response?.mapping,
     };
+  }
+
+  function addMappingRow() {
+    const oldId = nextUnmappedOldId(oldFields.map((field) => field.id), mappingRows);
+    if (!oldId) {
+      setError("Each old field already has a mapping row.");
+      return;
+    }
+    setMappingRows([...mappingRows, defaultMappingRow(oldId, newFields.map((field) => field.id))]);
   }
 
   return (
@@ -333,8 +361,8 @@ function App() {
           <div className="detail-header"><div><p className="eyebrow">Case {caseId}</p><h3>{recordPhase(caseRecord)} · revision {caseRecord.revision}</h3></div><span className={`outcome ${caseRecord.outcome ? "has-value" : ""}`}>{caseRecord.outcome || "Awaiting evaluation"}</span></div>
           <dl className="facts"><div><dt>Primary</dt><dd>{caseRecord.primary}</dd></div><div><dt>Mapper</dt><dd>{caseRecord.secondary}</dd></div><div><dt>Attempts</dt><dd>{caseRecord.accepted_attempts}</dd></div><div><dt>Last operation</dt><dd>{caseRecord.last_operation?.method}</dd></div></dl>
           <div className="schema-grid"><SchemaTable title="case-old" fields={oldFields} setFields={setOldFields} /><SchemaTable title="case-new" fields={newFields} setFields={setNewFields} /></div>
-          <section className="table-card"><div className="section-heading"><h3>Mapping rows</h3><button type="button" className="quiet-button" onClick={() => setDefaults([...defaults, { new_id: "", value: "" }])}>Add default</button></div>
-            <div className="scroll-table"><table><thead><tr><th>Old ID</th><th>New ID</th><th>Transform</th></tr></thead><tbody>{mappingRows.map((row, index) => <tr key={`${row.old_id}-${index}`}><td>{row.old_id}</td><td><select value={row.new_id} disabled={row.transform === "DROP"} onChange={(event) => setMappingRows(mappingRows.map((item, itemIndex) => itemIndex === index ? { ...item, new_id: event.target.value } : item))}><option value="">DROP</option>{newFields.map((field) => <option key={field.id} value={field.id}>{field.id}</option>)}</select></td><td><select value={row.transform} onChange={(event) => setMappingRows(mappingRows.map((item, itemIndex) => itemIndex === index ? { ...item, transform: event.target.value as MappingRow["transform"], new_id: event.target.value === "DROP" ? "" : item.new_id } : item))}>{(["IDENTITY", "RENAME", "CAST", "DROP"] as MappingRow["transform"][]).map((transform) => <option key={transform}>{transform}</option>)}</select></td></tr>)}</tbody></table></div>
+          <section className="table-card"><div className="section-heading"><h3>Mapping rows</h3><div className="toolbar"><button type="button" className="quiet-button" onClick={addMappingRow} disabled={mappingRows.length >= MAX_MAPPING_ROWS || !nextUnmappedOldId(oldFields.map((field) => field.id), mappingRows)}>Add mapping row</button><button type="button" className="quiet-button" onClick={() => setDefaults([...defaults, { new_id: "", value: "" }])}>Add default</button></div></div>
+            <div className="scroll-table"><table><thead><tr><th>Old ID</th><th>New ID</th><th>Transform</th></tr></thead><tbody>{mappingRows.map((row, index) => <tr key={`${row.old_id}-${index}`}><td><select value={row.old_id} aria-label={`Mapping row ${index + 1} old field`} onChange={(event) => setMappingRows(mappingRows.map((item, itemIndex) => itemIndex === index ? { ...item, old_id: event.target.value } : item))}><option value="">Select old field</option>{oldFields.map((field, fieldIndex) => <option key={`${field.id}-${fieldIndex}`} value={field.id} disabled={mappingRows.some((item, itemIndex) => itemIndex !== index && item.old_id === field.id)}>{field.id}</option>)}</select></td><td><select value={row.new_id} disabled={row.transform === "DROP"} aria-label={`Mapping row ${index + 1} new field`} onChange={(event) => setMappingRows(mappingRows.map((item, itemIndex) => itemIndex === index ? { ...item, new_id: event.target.value } : item))}><option value="">No target (DROP)</option>{newFields.map((field, fieldIndex) => <option key={`${field.id}-${fieldIndex}`} value={field.id} disabled={!isTargetAvailable(mappingRows, index, field.id)}>{field.id}</option>)}</select></td><td><select value={row.transform} aria-label={`Mapping row ${index + 1} transform`} onChange={(event) => setMappingRows(mappingRows.map((item, itemIndex) => itemIndex === index ? { ...item, transform: event.target.value as MappingRow["transform"], new_id: event.target.value === "DROP" ? "" : item.new_id } : item))}>{(["IDENTITY", "RENAME", "CAST", "DROP"] as MappingRow["transform"][]).map((transform) => <option key={transform}>{transform}</option>)}</select></td></tr>)}</tbody></table></div>
             {!!defaults.length && <div className="defaults-list">{defaults.map((item, index) => <div className="default-row" key={index}><input value={item.new_id} placeholder="new_id" onChange={(event) => setDefaults(defaults.map((row, rowIndex) => rowIndex === index ? { ...row, new_id: event.target.value } : row))} /><input value={item.value} placeholder="default value" onChange={(event) => setDefaults(defaults.map((row, rowIndex) => rowIndex === index ? { ...row, value: event.target.value } : row))} /><button type="button" className="icon-button" onClick={() => setDefaults(defaults.filter((_row, rowIndex) => rowIndex !== index))}>×</button></div>)}</div>}
           </section>
           <div className="action-row">
