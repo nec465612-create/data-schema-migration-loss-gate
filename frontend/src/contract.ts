@@ -10,6 +10,7 @@ import {
   updateJournal,
 } from "./pending";
 import { WriteProgress } from "./progress";
+import { chainMatches } from "./network";
 
 export type ChainName = "localnet" | "studionet" | "testnetAsimov" | "testnetBradbury";
 export type Eip1193Provider = {
@@ -78,6 +79,7 @@ export function decimal(value: unknown): string {
 const readClient: any = createClient({ chain: chains[config.chainName] });
 let writeClient: any = null;
 let connectedAccount: string | null = null;
+let connectedChainId: string | null = null;
 
 export function currentAccount(): string | null {
   return connectedAccount;
@@ -130,6 +132,7 @@ export async function connectWallet(wallet: WalletOption): Promise<{ account: st
   }
   connectedAccount = accounts[0].toLowerCase();
   const chainId = String(await wallet.provider.request({ method: "eth_chainId" })).toLowerCase();
+  connectedChainId = chainId;
   writeClient = createClient({
     chain: chains[config.chainName],
     account: connectedAccount as `0x${string}`,
@@ -141,12 +144,15 @@ export async function connectWallet(wallet: WalletOption): Promise<{ account: st
 export async function switchToConfiguredNetwork(): Promise<string> {
   if (!writeClient) throw new Error("WALLET_NOT_CONNECTED");
   await writeClient.connect(config.chainName);
-  return String(await writeClient.getChainId?.() ?? expectedChainId()).toLowerCase();
+  connectedChainId = String(await writeClient.getChainId?.() ?? "").toLowerCase();
+  if (!chainMatches(expectedChainId(), connectedChainId)) throw new Error("WRONG_CHAIN");
+  return connectedChainId;
 }
 
 export function disconnectWallet(): void {
   writeClient = null;
   connectedAccount = null;
+  connectedChainId = null;
 }
 
 export async function readView(functionName: string, args: unknown[] = []): Promise<string> {
@@ -201,6 +207,7 @@ export async function writeAndVerify(
   onProgress: (progress: WriteProgress) => void = () => undefined,
 ): Promise<{ record: JournalRecord; caseId: string; encoded: string }> {
   if (!writeClient || !connectedAccount) throw new Error("WALLET_NOT_CONNECTED");
+  if (!chainMatches(expectedChainId(), connectedChainId ?? undefined)) throw new Error("WRONG_CHAIN");
   const contract = requireAddress();
   const argsJson = JSON.stringify(request.args, jsonReplacer);
   const argsHash = await sha256Utf8(canonicalJson(request.argsForHash));

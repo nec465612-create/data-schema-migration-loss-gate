@@ -24,6 +24,7 @@ import {
   MappingRow,
   nextUnmappedOldId,
 } from "./mapping";
+import { chainMatches } from "./network";
 import "./styles.css";
 
 type FieldType = "TEXT" | "INT" | "BOOL" | "ENUM";
@@ -147,7 +148,7 @@ function App() {
 
   const basePayload = useMemo(() => ({ old: oldFields, new: newFields }), [oldFields, newFields]);
   const responsePayload = useMemo(() => ({ mapping: mappingRows, defaults }), [mappingRows, defaults]);
-  const onCorrectChain = connection?.chainId === connection?.expectedChainId;
+  const onCorrectChain = Boolean(connection && chainMatches(connection.expectedChainId, connection.chainId));
   const account = connection?.account ?? currentAccount();
 
   function resetNotice() { setError(""); setMessage(""); }
@@ -351,7 +352,7 @@ function App() {
           creator: account ?? "",
           nonce,
           verify: (record) => record.phase === "BASE_DRAFT" && record.revision === "1",
-        })} disabled={busy || !journalReady || !account || !config.contractAddress}>Create case</button>
+        })} disabled={busy || !journalReady || !account || !onCorrectChain || !config.contractAddress}>Create case</button>
       </section>
 
       <section className="panel" aria-labelledby="cases-heading">
