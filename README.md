@@ -114,7 +114,7 @@ npm --prefix frontend run build
 npm --prefix frontend run playwright
 ```
 
-Current verified results are 20 contract tests, 40 frontend tests and 3 Playwright tests passing; contract lint/typecheck and the production frontend build pass. The build emits the documented non-blocking Vite chunk-size warning. Exact Studionet transactions, source hashes, readbacks and live Vercel E2E evidence are recorded in [docs/VERIFICATION.md](docs/VERIFICATION.md).
+Current verified results are 20 contract tests, 43 frontend tests and 3 Playwright tests passing; contract lint/typecheck and the production frontend build pass. The build emits the documented non-blocking Vite chunk-size warning. Exact Studionet transactions, source hashes, readbacks and release evidence are recorded in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 ## Deployment and source parity
 
@@ -123,8 +123,8 @@ Current verified results are 20 contract tests, 40 frontend tests and 3 Playwrig
 - Deployment transaction: `0x93825fc61758708299cd0f7b8ff94728aabbbb94453f4387296ebf4facd47d3d`.
 - Contract source SHA-256: `48E2F8D15720DAABCCA4B1D4F2DA9E336AE31A3A5D07B297201AE2B09291B53A`.
 - Contract schema SHA-256: `16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF`.
-- Live app: `https://data-schema-migration-loss-gate.vercel.app`.
-- Vercel release: `dpl_FrgkZoLbF3d86R7qLraSCvXvZbPc`, built from release commit `523c2dc` (frontend code unchanged from `4c91ce1`).
+- Judge-visible Vercel alias: `https://data-schema-migration-loss-gate.vercel.app` (prior production smoke target).
+- Prior Vercel deployment metadata: `dpl_FrgkZoLbF3d86R7qLraSCvXvZbPc`, built from superseded frontend release `4c91ce1`; the corrected frontend release is local commit `8bb5ee8986162156bf52a1afd3bc79dd7b678d63` pending its governed redeploy and E2E rerun.
 
 The deployed contract is intentionally frozen. Recovery relies on preserved source/schema parity, nonce-based create reconciliation, exact revision history and deployment of a separately reviewed successor if a future change is required.
 

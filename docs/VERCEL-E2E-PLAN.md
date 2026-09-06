@@ -1,10 +1,10 @@
 # Vercel E2E Plan
 
-`DOCUMENT_STATUS: POST_DEPLOY_PLAN_NOT_EXECUTED`
+`DOCUMENT_STATUS: POST_DEPLOY_PLAN_REFRESHED_FOR_CORRECTION_RELEASE`
 
-`POST_DEPLOY_PACKAGE: DSM-LG-POSTDEPLOY-FD956A4`
+`POST_DEPLOY_PACKAGE: DSM-LG-POSTDEPLOY-8BB5EE8`
 
-This is the minimum-sufficient judge-perspective plan for the exact Build revision `fd956a413bff1be16f5773267ec047243864f2d5`. It is submitted for the `POST_DEPLOY_TEST` checkpoint; it is not permission to open Chrome, push GitHub, deploy Vercel, or request a wallet signature. Explicit user start permission is required immediately before the later release/test preparation.
+This is the minimum-sufficient judge-perspective plan for the exact frontend correction release `8bb5ee8986162156bf52a1afd3bc79dd7b678d63`. It is submitted for the `POST_DEPLOY_TEST` checkpoint; it is not permission to open Chrome, push GitHub, deploy Vercel, or request a wallet signature. The earlier plan/package `DSM-LG-POSTDEPLOY-FD956A4` at `fd956a4` is superseded. Explicit user start permission is required immediately before the corrected release/test preparation.
 
 ## Release identity and actor boundary
 
@@ -15,7 +15,7 @@ This is the minimum-sufficient judge-perspective plan for the exact Build revisi
 - Wallet: a separate fresh MetaMask, OKX Wallet, or Rabby account, never the Studio deployer or mapper account and never restored from their credentials.
 - Wallet options: only real, callable, currently detected allowlisted providers; the tester explicitly chooses one before connection.
 - User action: only confirm or reject wallet popups. The primary AI performs all navigation, input, reads, polling, lifecycle checks, and evidence capture.
-- Self-service actor setup: for a fresh account, enter that same tester address as the mapper during create. This permits the tester to prove the public creator/mapper journey without Studio-account dependence; the evaluator role is then exercised by the same separate account after freeze.
+- Self-service actor setup: create with the selected external creator account and a second external mapper address that is distinct from the creator because the contract enforces `DISTINCT_ACTORS`; record the explicit provider/account transition before the mapper signs. The evaluator role is then exercised by that same selected mapper account after freeze. No Studio account or credential is used in the browser.
 
 ## Initial state and evidence discipline
 
@@ -31,7 +31,7 @@ This is the minimum-sufficient judge-perspective plan for the exact Build revisi
 |---|---|---|
 | J0 | Read landing and How it works | Public warning and exact-material disclaimer are visible; no startup RPC. |
 | J1 | Discover wallets, explicitly choose the detected provider, connect | Only detected allowlisted callable providers appear; connection is explicit; network/account state is accurate. Test cancellation/rejection once if the wallet exposes it, retaining a recoverable error and making no write. |
-| J2 | Correct the network if needed, then create a case with a unique nonce, tester address as mapper, one compatible old/new field and identity mapping | Validation blocks malformed input before signing. After signature, show `WAITING_FOR_WALLET`/`SUBMITTED`/`WAITING_FOR_FINALITY`/`VERIFYING_EXECUTION`/`VERIFYING_READBACK` as observed. Success requires `FINALIZED`, semantic `SUCCESS`, and authoritative `BASE_DRAFT`, revision `1`. |
+| J2 | Correct the network if needed, then create a case with a unique nonce, a second external mapper address distinct from the creator, one compatible old/new field and identity mapping | Validation blocks malformed input before signing. Record the selected creator, any explicit account switch/reconnect, mapper selection and create receipt caller. After signature, show `WAITING_FOR_WALLET`/`SUBMITTED`/`WAITING_FOR_FINALITY`/`VERIFYING_EXECUTION`/`VERIFYING_READBACK` as observed. Success requires `FINALIZED`, semantic `SUCCESS`, and authoritative `BASE_DRAFT`, revision `1`. |
 | J3 | Lock schemas | One explicit transaction; success requires finalized semantic success and authoritative `BASE_LOCKED`, revision `2`. |
 | J4 | Put the explicit identity mapping | One explicit transaction; success requires authoritative `RESPONSE_DRAFT`, revision `3`, with the submitted mapping preserved. |
 | J5 | Freeze mapping | One explicit transaction; success requires authoritative `FROZEN`, revision `4`. |
