@@ -51,3 +51,17 @@ test("reload restores a retained journal and keeps archive behind export", async
   await (await download).path();
   await expect(archive).toBeEnabled();
 });
+
+test("RPC evidence can be refreshed and cleared from the public UI", async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem("dsm-lg-rpc-telemetry-v1", JSON.stringify([
+    { kind: "rpc", source: "http", method: "get_schema_case_count", scope: "load-case-ids", at: 1, ok: true, status: 200 },
+  ])));
+  await page.goto("/");
+  await page.getByText("RPC evidence", { exact: true }).click();
+  await page.getByRole("button", { name: "Refresh RPC evidence" }).click();
+  await expect(page.getByText("1 RPC requests recorded.")).toBeVisible();
+  await expect(page.getByTestId("rpc-evidence-json")).toContainText("get_schema_case_count");
+  await page.getByRole("button", { name: "Clear RPC evidence" }).click();
+  await expect(page.getByText("0 RPC requests recorded.")).toBeVisible();
+  await expect(page.getByTestId("rpc-evidence-json")).toHaveText("[]");
+});

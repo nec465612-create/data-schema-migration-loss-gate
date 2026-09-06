@@ -21,7 +21,7 @@ import {
   WriteRequest,
   writeAndVerify,
 } from "./contract";
-import { withRpcScope } from "./rpc-telemetry";
+import { clearRpcTelemetry, readRpcTelemetry, RpcTelemetryEvent, withRpcScope } from "./rpc-telemetry";
 import { archiveJournalRecord, attachKnownTransactionHash, JournalRecord, rebuildJournalIndex, serializeJournalRecord } from "./pending";
 import { isPendingPhase, PROGRESS_COPY, WriteProgress } from "./progress";
 import {
@@ -208,6 +208,7 @@ function App() {
   const [journal, setJournal] = useState<JournalRecord[]>([]);
   const [journalReadbacks, setJournalReadbacks] = useState<Record<string, string>>({});
   const [journalExported, setJournalExported] = useState<Record<string, boolean>>({});
+  const [rpcEvidence, setRpcEvidence] = useState<RpcTelemetryEvent[]>(() => readRpcTelemetry());
   const [knownHashes, setKnownHashes] = useState<Record<string, string>>({});
   const [recoveryHash, setRecoveryHash] = useState("");
   const [recoveryMethod, setRecoveryMethod] = useState<RecoverableMethod>("put_mapping");
@@ -403,6 +404,20 @@ function App() {
     URL.revokeObjectURL(url);
     setJournalExported((current) => ({ ...current, [record.reservation]: true }));
     setMessage(`Journal record ${record.reservation} exported. It may now be archived if its status is VERIFIED or FINALIZED_ERROR.`);
+  }
+
+  function refreshRpcEvidence() {
+    setRpcEvidence(readRpcTelemetry());
+  }
+
+  function clearRpcEvidence() {
+    clearRpcTelemetry();
+    setRpcEvidence([]);
+  }
+
+  async function copyRpcEvidence() {
+    await navigator.clipboard.writeText(JSON.stringify(readRpcTelemetry(), null, 2));
+    setMessage("RPC evidence copied as JSON.");
   }
 
   async function archiveExportedJournal(record: JournalRecord) {
@@ -703,6 +718,17 @@ function App() {
               Recover and verify hash
             </button>
           </div>
+          <details className="rpc-evidence">
+            <summary>RPC evidence</summary>
+            <p className="muted">Exact browser-session JSON-RPC events captured at the HTTP and selected-wallet provider boundaries.</p>
+            <div className="toolbar">
+              <button type="button" className="quiet-button" onClick={clearRpcEvidence}>Clear RPC evidence</button>
+              <button type="button" className="quiet-button" onClick={refreshRpcEvidence}>Refresh RPC evidence</button>
+              <button type="button" className="quiet-button" onClick={() => void copyRpcEvidence()}>Copy RPC evidence JSON</button>
+            </div>
+            <p><strong>{rpcEvidence.filter((event) => event.kind === "rpc").length}</strong> RPC requests recorded.</p>
+            <pre className="record-view" data-testid="rpc-evidence-json">{JSON.stringify(rpcEvidence, null, 2)}</pre>
+          </details>
         </section>
 
         <section className="panel" id="create-case" aria-labelledby="create-heading">
