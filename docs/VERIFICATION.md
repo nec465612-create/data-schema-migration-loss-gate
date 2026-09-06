@@ -17,7 +17,7 @@ This document binds the live Studionet evidence and the exact public build revis
 - Network: Studionet, chain ID `61999`
 - Contract: `0xB6D90F9dCbf14A2C638bA62de9ec43e738FCf69d`
 - Live Vercel app: `https://data-schema-migration-loss-gate.vercel.app`
-- Exact Vercel deployment: `dpl_8EQb4gmFdF9mNLvbDuQS12wxUiBa` (`https://data-schema-migration-loss-gate-jpji8ofg3-nec10.vercel.app`)
+- Exact Vercel deployment: `dpl_FrgkZoLbF3d86R7qLraSCvXvZbPc` (`https://data-schema-migration-loss-gate-4uchp2xxw-nec10.vercel.app`)
 - Deployment transaction: `0x93825fc61758708299cd0f7b8ff94728aabbbb94453f4387296ebf4facd47d3d`
 - Studio deployer/primary: `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`
 - Studio mapper/secondary: `0x34b92E6553eaCA11A00A9d86d75d8a7881779D78`
