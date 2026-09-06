@@ -36,7 +36,7 @@ import "./styles.css";
 type FieldType = "TEXT" | "INT" | "BOOL" | "ENUM";
 type Field = { id: string; type: FieldType; required: boolean; meaning: string; values: string[] };
 type DefaultRow = { new_id: string; value: string };
-type RecoverableMethod = "put_mapping" | "freeze_mapping";
+type RecoverableMethod = "put_mapping" | "freeze_mapping" | "evaluate_migration";
 
 const blankField = (id: string): Field => ({ id, type: "TEXT", required: true, meaning: "same declared meaning", values: [] });
 const initialOld: Field[] = [blankField("name")];
@@ -373,7 +373,8 @@ function App() {
 
   function recoveryRequest(): WriteRequest {
     if (recoveryMethod === "put_mapping") return putRequest();
-    return caseRequest("freeze_mapping", (record) => record.phase === "FROZEN");
+    if (recoveryMethod === "freeze_mapping") return caseRequest("freeze_mapping", (record) => record.phase === "FROZEN");
+    return caseRequest("evaluate_migration", (record) => ["DONE", "UNRESOLVED"].includes(record.phase));
   }
 
   async function recoverKnownWrite() {
@@ -688,6 +689,7 @@ function App() {
             <select aria-label="Recovery method" value={recoveryMethod} onChange={(event) => setRecoveryMethod(event.target.value as RecoverableMethod)}>
               <option value="put_mapping">put_mapping</option>
               <option value="freeze_mapping">freeze_mapping</option>
+              <option value="evaluate_migration">evaluate_migration</option>
             </select>
             <input
               aria-label="Known submitted transaction hash"
