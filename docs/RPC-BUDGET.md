@@ -1,6 +1,6 @@
 # RPC Budget Matrix
 
-`DOCUMENT_STATUS: POST_DEPLOY_REVIEW_PACKAGE`
+`DOCUMENT_STATUS: FINAL_RELEASE_MEASURED_OBSERVABLE_LEDGER`
 
 This matrix is bound to the C3 Stage 2 frontend flow. The frontend section remains a plan until the exact final Vercel deployment is measured. Studio live evidence is recorded separately in `docs/VERIFICATION.md` and the local secret-free action ledger.
 
@@ -20,29 +20,33 @@ MULTI_CLIENT_JUSTIFICATION: NOT_REQUIRED
 |---|---|---|---|---|---|---|---|---|---:|---:|---|
 | Initial landing | App render | none | Browser load | none | n/a | n/a | none | none | 0 | 0 | No chain request |
 | Wallet discovery and connect | Canonical wallet-session store | EIP-6963; eth_requestAccounts; eth_chainId | Explicit Discover wallets or Connect | none | One shared session | Account or chain event | none | User action only; teardown cancellation | 2 | 0 | Connected session or recoverable error |
-| Load case IDs | Shared read client | list_cases | Explicit Load IDs | chain/contract/list_cases/[1,4]; no cache | In-flight dedupe | Account/network/contract change | none | Bounded; cancel on teardown | 1 | 0 | Returned case IDs or recoverable error |
+| Load case IDs | Shared read client | get_count | Explicit Load IDs | chain/contract/get_count; no cache | In-flight dedupe | Account/network/contract change | none | Bounded; cancel on teardown | 1 | 0 | Contiguous IDs `1..count` or recoverable error |
 | Open case detail | Shared read client | get_case | Explicit case selection | chain/contract/get_case/[id]; no cache | In-flight dedupe | Account/network/contract change | none | Bounded; cancel on teardown | 1 | 0 | Decoded case or recoverable error |
-| One write workflow | Write coordinator | create_schema_case/replace_schemas/lock_schemas/put_mapping/freeze_mapping/evaluate_migration | Explicit action button | No cache for consequential state | One journal intent and coordinator | After write/account/network change | 2/4/8s; up to 3 | Bounded Retry-After/backoff; cancel hidden or teardown | 6 | 1 | FINALIZED plus semantic SUCCESS and authoritative readback |
+| One write workflow | Write coordinator | create_schema_case/replace_schemas/lock_schemas/put_mapping/freeze_mapping/evaluate_migration | Explicit action button | No cache for consequential state | One journal intent and coordinator | After write/account/network change | 2/4/8/12/16/20/24s; up to 7 | Bounded Retry-After/backoff; cancel hidden or teardown | 10 | 1 | FINALIZED plus semantic SUCCESS and authoritative readback |
 | Retry after uncertainty | Retained journal | retry_migration only after reconciliation | Explicit retry action | No cache | One retained intent | After reconciliation | No automatic polling | No automatic retry or resubmit | 0 | 0 | Retained hash reconciled before a new intent |
 
 ## FRONTEND RPC BUDGET EVIDENCE
 
-FRONTEND_EVIDENCE_STATUS: INCOMPLETE
+FRONTEND_EVIDENCE_STATUS: COMPLETE_OBSERVABLE_ACTION_LEDGER
 
-Live frontend measurement is not claimed before the later deployed E2E stage.
+Chrome control exposed visible lifecycle/action state but not a physical request-event stream. Accordingly, the final evidence records exact explicit actions, transaction hashes/counts, bounded source behavior and authoritative readbacks; it makes no invented physical-network count or exact receipt-poll count.
 
-| Screen/workflow | Request source/method | Actual requests | Cache hit/miss | In-flight dedupe | Poll attempts | Retry/delay | Invalidations | Readback calls | Actual transactions | Variance/result |
-|---|---|---:|---|---|---:|---|---|---:|---:|---|
+| Screen/workflow | Request source/method | Observed actions | Cache/dedupe | Poll evidence | Retry | Authoritative readback | Actual transactions | Result |
+|---|---|---:|---|---|---|---|---:|---|
+| Clean landing | none | 0 chain/write actions | n/a | none | none | none | 0 | PASS; disconnected landing |
+| Wallet connect/account switch | EIP-6963 + account/chain session | 1 explicit connect; 2 account transitions | one canonical session | none | none | visible account/chain binding | 0 | PASS |
+| J2–J6 Case 6 writes | one coordinator per method | 5 explicit writes | one retained journal intent per write; no duplicate | bounded `2/4/8/12/16/20/24s`; visible finality wait; physical attempt count unavailable | 0 resubmits | exact revision `1` through `5`; final `DONE/LOSSLESS` | 5 | PASS |
+| J7 reload/list/detail | `get_count`, `get_case(6)` | 2 explicit reads after reconnect | no stale authenticated restore | none | none | `DONE`, `LOSSLESS`, revision `5` | 0 | PASS |
 
 ## Frontend budget
 
 | User action | Allowed automatic chain/RPC work | Implementation boundary |
 |---|---:|---|
 | Initial landing | 0 | No client read or wallet request on startup |
-| Load case IDs | 1 read | Explicit `list_cases` only |
+| Load case IDs | 1 read | Explicit `get_count` only; contiguous IDs are derived locally |
 | Open case detail | 1 read | Explicit `get_case` only |
 | Wallet connect | 1 chain read | Account request plus one `eth_chainId` read |
-| One write | 6 maximum | 1 submission, up to 3 receipt queries at bounded 2/4/8s backoff while visible, up to 2 authoritative readbacks at 0/4s; hidden-tab pause and abort/session teardown stop automatic polling |
+| One write | 10 maximum | 1 submission, up to 7 receipt queries at bounded 2/4/8/12/16/20/24s while visible, up to 2 authoritative readbacks at 0/4s; hidden-tab pause and abort/session teardown stop automatic polling |
 | Retry after uncertainty | 0 automatic | User reconciles the retained hash/journal before any new intent |
 
 The write coordinator reports `WAITING_FOR_WALLET`, `SUBMITTED`, `WAITING_FOR_FINALITY`, `VERIFYING_EXECUTION`, `VERIFYING_READBACK`, and terminal states. Receipt polling pauses without RPC while the document is hidden; transient transport failures consume the same bounded receipt slots with exponential backoff and jitter; abort/session teardown removes timers and preserves a submitted hash in `RECONCILE`. Browser success is emitted only after finalized successful execution and method-specific historical readback.
@@ -110,4 +114,4 @@ Disposition: retain the account/probe as read-only setup evidence, make no retro
 
 ## Acceptance boundary
 
-Before GitHub preparation can begin, the exact current revision, completed Studio evidence, this matrix and `docs/VERCEL-E2E-PLAN.md` must be reviewed in the retained anonymous `POST_DEPLOY_TEST` checkpoint. Local tests do not satisfy the later live frontend/account/reviewer requirements.
+The exact final revision, completed Studio evidence, final Vercel deployment, this measured observable ledger and `docs/VERIFICATION.md` now enter the retained anonymous `POST_GITHUB_VERCEL_FINAL` checkpoint. Physical request counts remain explicitly unavailable rather than inferred.

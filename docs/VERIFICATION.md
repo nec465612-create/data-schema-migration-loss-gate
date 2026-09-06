@@ -1,23 +1,23 @@
 # Verification
 
-`DOCUMENT_STATUS: POST_DEPLOY_CORRECTION_DEPLOYED_E2E_BLOCKED_ACCESS`
+`DOCUMENT_STATUS: POST_GITHUB_VERCEL_FINAL_EVIDENCE_COMPLETE`
 
-`POST_DEPLOY_PACKAGE: DSM-LG-POSTDEPLOY-8BB5EE8`
+`FINAL_PACKAGE: DSM-LG-FINAL-DF8C8F2`
 
-This document binds the live Studionet evidence and corrected public build deployment. The corrected Vercel E2E is not complete because the locked Chrome tab was unavailable. It is not a final-release or Explorer approval.
+This document binds the live Studionet evidence, public repository, final Vercel deployment and exact-release Vercel E2E. Anonymous `POST_GITHUB_VERCEL_FINAL` approval is still required; this document does not claim that approval or Explorer submission approval.
 
 ## Identity
 
 - Project: `Data Schema Migration Loss Gate`
-- Current package revision: `8bb5ee8986162156bf52a1afd3bc79dd7b678d63`
-- Package identity: `DSM-LG-POSTDEPLOY-8BB5EE8`
+- Current package revision: `df8c8f2f1a96fdc14e75725adaca60458e1d2114`
+- Package identity: `DSM-LG-FINAL-DF8C8F2`
 - Contract source: `contracts/main.py`
 - Contract source SHA-256: `48E2F8D15720DAABCCA4B1D4F2DA9E336AE31A3A5D07B297201AE2B09291B53A`
 - Contract schema SHA-256: `16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF`
 - Network: Studionet, chain ID `61999`
 - Contract: `0xB6D90F9dCbf14A2C638bA62de9ec43e738FCf69d`
-- Judge-visible Vercel alias: `https://data-schema-migration-loss-gate.vercel.app` (corrected deployment smoke check HTTP `200`; deployed asset contains the journal-verification correction marker).
-- Corrected Vercel deployment: `dpl_DQ6sreuRBDv4CfaTo6q3nUhZrcg4`, target `production`, immutable URL `https://data-schema-migration-loss-gate-5hwr0b56k-nec10.vercel.app`, aliases `data-schema-migration-loss-gate.vercel.app` and `data-schema-migration-loss-gate-nec10.vercel.app`, built from the corrected frontend tree at `8bb5ee8`.
+- Judge-visible Vercel alias: `https://data-schema-migration-loss-gate.vercel.app`.
+- Final Vercel deployment: `dpl_4PF7a7EBgR5DijmKTCPPksHp7u6r`, target `production`, immutable URL `https://data-schema-migration-loss-gate-f3rmouc8z-nec10.vercel.app`, built from `df8c8f2f1a96fdc14e75725adaca60458e1d2114` and aliased to the judge-visible URL.
 - Prior Vercel deployment metadata: `dpl_FrgkZoLbF3d86R7qLraSCvXvZbPc` target `production`, aliases `data-schema-migration-loss-gate.vercel.app` and `data-schema-migration-loss-gate-nec10.vercel.app`, built from superseded frontend release `4c91ce1`; retained as historical evidence and not claimed as this package's corrected release.
 - Immutable deployment URL: `https://data-schema-migration-loss-gate-4uchp2xxw-nec10.vercel.app` is SSO-protected (HTTP `302` to `/sso-api`), so it is metadata-only and no public HTTP-200 application claim is made for it.
 - Deployment transaction: `0x93825fc61758708299cd0f7b8ff94728aabbbb94453f4387296ebf4facd47d3d`
@@ -25,11 +25,23 @@ This document binds the live Studionet evidence and corrected public build deplo
 - Studio mapper/secondary: `0x34b92E6553eaCA11A00A9d86d75d8a7881779D78`
 - Studio evidence mode: `OBSERVABLE_ACTION_LEDGER`; no physical network request count is claimed.
 
-The retained Studio packages and deployed-source commits are historical provenance. The contract address and contract source hash remain unchanged. The previous Vercel journey is superseded by the journal-integrity correction in `8bb5ee8`. The corrected deployment is READY; the affected E2E rerun remains blocked by loss of the locked Chrome tab and therefore this package makes no current Vercel PASS claim.
+The retained Studio packages and deployed-source commits are historical provenance. The contract address and contract source hash remain unchanged. Earlier blocked and superseded frontend runs are not used as final-release proof. The final deployment is READY and the Case 6 journey below ran on that exact release.
 
 ## Live Vercel E2E proof
 
-The prior primary-AI-controlled Case 4 journey is retained in [docs/preflight/vercel-e2e-completion.md](preflight/vercel-e2e-completion.md) as superseded evidence for frontend release `4c91ce1`. It used the separate external OKX account `0xe8d6c55838c39301c11d54fc9a38b9de298329f6`, not the Studio deployer, and reached `DONE`, `LOSSLESS`, revision `5`. The corrected deployment is recorded above, but its required J0-J7 rerun is currently `BLOCKED_ACCESS` because Chrome instance `2` no longer exposes the locked tab `1145402204`; no corrected-release E2E or F-020 closure is claimed.
+The primary AI controlled Chrome continuously on the final alias. OKX creator `0xe8d6c55838c39301c11d54fc9a38b9de298329f6` and mapper/evaluator `0xc3a438eba22c439cbce393f3f8c79bfcac8b27c6` are separate external browser accounts and are not the Studio deployer or mapper.
+
+| Step | Exact final-release evidence | Status |
+|---|---|---|
+| J0–J1 | Clean reload started at `Connect wallet`; explicit OKX selection connected to Studionet `61999`; no startup write | PASS |
+| J2 create Case 6 | `0x4335dbf0fb1655c7b923f209d3a1fbf8558ca4825a47637c9bfa95a29cf55d12`; creator/mapper distinct; automatic finality/execution/readback; `BASE_DRAFT`, revision `1` | PASS |
+| J3 lock | `0xea20be2b0b4b0a9aab16f639ddf50da4dc2e8150f852618ea70d6aefe51efa45`; automatic finality/execution/readback; `BASE_LOCKED`, revision `2` | PASS |
+| J4 identity mapping | `0xdf6fc3d77f3a635312f5ded79c59d5f307b236a0a3359259f4ed30401feb2ac9`; `name` to `name`, `IDENTITY`; automatic `SUCCESS`; `RESPONSE_DRAFT`, revision `3` | PASS |
+| J5 freeze | `0xab2012927684e35dbad7b6e7e56a11fb65615dcd61f6e05bc0b35aa4e23d7138`; automatic `SUCCESS`; `FROZEN`, revision `4` | PASS |
+| J6 evaluate | `0x69fc3ad3a2b1d73ae9518773d18f0aef878bfe87d60f5191035785e41b7ef7f0`; automatic bounded finality/consensus/readback; `DONE`, `LOSSLESS`, revision `5`, result `SAME`, attempts `1` | PASS |
+| J7 reload/reconnect | Reload started disconnected; explicit OKX reconnect, `get_count`, then one explicit Case 6 detail read returned visible `DONE · revision 5`, `LOSSLESS`, last operation `evaluate_migration` | PASS |
+
+No Case 6 write required manual reconciliation, reload, replacement transaction or duplicate click. The earlier Case 5 run exposed a too-short receipt window; commits `88a2523` and `df8c8f2` added bounded finality coverage and a seventh-check regression before the fresh Case 6 rerun.
 
 ## Live Studio proof matrix
 
@@ -58,16 +70,16 @@ From `E:\Genlayer-Projects\data-schema-migration-loss-gate`:
 - `gltest -q tests`: PASS; 20 contract tests.
 - `genvm-lint check contracts/main.py --json`: PASS.
 - `genvm-lint typecheck contracts/main.py`: PASS.
-- `npm --prefix frontend run test`: PASS; 10 files / 43 tests.
+- `npm --prefix frontend run test`: PASS; 10 files / 47 tests.
 - `npm --prefix frontend run build`: PASS; non-blocking Vite chunk-size warning.
 - `npm --prefix frontend run playwright`: PASS; 3 tests.
 - `git diff --check`: PASS.
 
-## Next release gate
+## Final release gate
 
 - Frontend RPC plan/matrix: `docs/RPC-BUDGET.md`.
 - Exact Vercel plan: `docs/VERCEL-E2E-PLAN.md`.
-- Exact Vercel E2E plan: `docs/VERCEL-E2E-PLAN.md`, refreshed for package `DSM-LG-POSTDEPLOY-8BB5EE8` and frontend release `8bb5ee8986162156bf52a1afd3bc79dd7b678d63`.
-- Exact corrected deployment evidence: `docs/preflight/vercel-corrected-deployment.md` records `dpl_DQ6sreuRBDv4CfaTo6q3nUhZrcg4` and the alias smoke result.
-- Exact corrected Vercel E2E evidence: `docs/preflight/vercel-e2e-completion.md` remains a superseded-history record; the current rerun is blocked in `docs/preflight/vercel-e2e-blocked-tab.md` and must resume on the locked tab before claiming Vercel PASS.
-- GitHub target is public at the current documentation revision; Vercel deployment is READY. No wallet signature, final approval, or Explorer submission is claimed here.
+- Exact Vercel E2E plan: `docs/VERCEL-E2E-PLAN.md`.
+- Exact final deployment: `dpl_4PF7a7EBgR5DijmKTCPPksHp7u6r`; public alias `https://data-schema-migration-loss-gate.vercel.app`.
+- GitHub target: `https://github.com/nec465612-create/data-schema-migration-loss-gate`, public `main` at the current evidence revision after this documentation commit is pushed.
+- Next gate: retained anonymous reviewer at `POST_GITHUB_VERCEL_FINAL`; no final or Explorer approval is claimed here.

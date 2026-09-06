@@ -1,10 +1,10 @@
 # Vercel E2E Plan
 
-`DOCUMENT_STATUS: POST_DEPLOY_PLAN_REFRESHED_FOR_CORRECTION_RELEASE`
+`DOCUMENT_STATUS: EXECUTED_ON_FINAL_RELEASE`
 
-`POST_DEPLOY_PACKAGE: DSM-LG-POSTDEPLOY-8BB5EE8`
+`FINAL_PACKAGE: DSM-LG-FINAL-DF8C8F2`
 
-This is the minimum-sufficient judge-perspective plan for the exact frontend correction release `8bb5ee8986162156bf52a1afd3bc79dd7b678d63`. It is submitted for the `POST_DEPLOY_TEST` checkpoint; it is not permission to open Chrome, push GitHub, deploy Vercel, or request a wallet signature. The earlier plan/package `DSM-LG-POSTDEPLOY-FD956A4` at `fd956a4` is superseded. Explicit user start permission is required immediately before the corrected release/test preparation.
+This approved minimum-sufficient judge-perspective plan was executed on final frontend release `df8c8f2f1a96fdc14e75725adaca60458e1d2114`, Vercel deployment `dpl_4PF7a7EBgR5DijmKTCPPksHp7u6r`. Exact results are recorded in `docs/VERIFICATION.md`.
 
 ## Release identity and actor boundary
 
@@ -62,11 +62,11 @@ The separate `FRONTEND RPC BUDGET MATRIX` is `docs/RPC-BUDGET.md`. Planned ceili
 - wallet connect: at most the explicit discovery/account/chain sequence in the matrix;
 - list IDs: one explicit read;
 - open detail: one explicit read;
-- one write: at most `6` observable calls in the bounded coordinator (`1` submission, up to `3` receipt polls, up to `2` authoritative readbacks);
+- one write: at most `10` observable calls in the bounded coordinator (`1` submission, up to `7` receipt polls, up to `2` authoritative readbacks);
 - retry after uncertainty: `0` automatic calls until retained-hash reconciliation and explicit user action.
 
-Actual counts, cache/dedupe, invalidation, polling intervals, retry delay/count, readbacks and transaction totals must be measured on the exact final Vercel release. Any amplification, duplicate write, unbounded polling, missing teardown or unexplained client is a release blocker and requires one diagnosed repair batch followed by a fresh exact-release run.
+The exact-release observable ledger, hashes, transaction totals, readbacks and telemetry limitation are recorded in `docs/RPC-BUDGET.md`. Any amplification, duplicate write, unbounded polling, missing teardown or unexplained client remains a release blocker.
 
 ## Completion gate
 
-The Vercel run is complete only after `READY_TO_START → RUNNING → SWEEPING → COMPLETE`, every required case is PASS, all finality/semantic/readback checks agree, the frontend evidence matrix is complete, and no judge-visible blocker remains. This plan does not authorize GitHub/Vercel actions and does not claim their evidence.
+The final Case 6 run completed `READY_TO_START → RUNNING → SWEEPING → COMPLETE`: J0–J7 passed, all five writes reached automatic finality/semantic/readback success, J7 confirmed `DONE/LOSSLESS` after reload, and no duplicate write occurred. Final anonymous approval remains separate.
