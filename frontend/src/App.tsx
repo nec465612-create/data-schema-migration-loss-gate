@@ -681,17 +681,20 @@ function App() {
           </div>
           <button
             type="button"
-            onClick={() => run({
-              method: "create_schema_case",
-              args: [nonce, mapper.trim(), JSON.stringify(basePayload), 0n],
-              argsForHash: [nonce, mapper.trim().toLowerCase(), basePayload, "0"],
-              intent: `create:${(account ?? "").toLowerCase()}:${nonce}`,
-              preRevision: "0",
-              preHash: "null",
-              creator: account ?? "",
-              nonce,
-              verify: (record) => record.phase === "BASE_DRAFT" && record.revision === "1",
-            })}
+            onClick={() => {
+              const currentAccount = getWalletSession()?.account ?? account ?? "";
+              void run({
+                method: "create_schema_case",
+                args: [nonce, mapper.trim(), JSON.stringify(basePayload), 0n],
+                argsForHash: [nonce, mapper.trim().toLowerCase(), basePayload, "0"],
+                intent: `create:${currentAccount.toLowerCase()}:${nonce}`,
+                preRevision: "0",
+                preHash: "null",
+                creator: currentAccount,
+                nonce,
+                verify: (record) => record.phase === "BASE_DRAFT" && record.revision === "1",
+              });
+            }}
             disabled={busy || !journalReady || !account || !canWrite || !config.contractAddress || !mapperValid}
           >
             Create case

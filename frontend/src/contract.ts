@@ -407,8 +407,8 @@ function journalReadbackContext(record: JournalRecord): { caseId: string; revisi
     const args = JSON.parse(record.args_json) as unknown;
     if (!Array.isArray(args)) return null;
     if (parts[0] === "create" && record.method === "create_schema_case" && parts.length === 3) {
-      const [, account, nonce] = parts;
-      if (account !== record.account || String(args[0]) !== nonce) return null;
+      const [, , nonce] = parts;
+      if (String(args[0]) !== nonce) return null;
       return { caseId: "", revision: (BigInt(record.pre_revision) + 1n).toString() };
     }
     if (parts.length !== 3 || parts[0] !== record.method || !decimalPattern.test(parts[1]) || parts[2] !== record.pre_revision) return null;

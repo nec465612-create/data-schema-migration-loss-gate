@@ -116,6 +116,28 @@ describe("journal recovery reconciliation", () => {
     expect(result.detail).toContain("DISTINCT_ACTORS");
   });
 
+  it("reconciles a create record using its stored account when intent text is stale", async () => {
+    const creator = "0xc3a438eba22c439cbce393f3f8c79bfcac8b27c6";
+    const nonce = "fb76cb4395c3c583f9b34e2119ce4715";
+    const input = {
+      ...baseInput,
+      account: creator,
+      method: "create_schema_case",
+      intent: `create:${account}:${nonce}`,
+      args_json: JSON.stringify([nonce, "0xe8d6c55838c39301c11d54fc9a38b9de298329f6", "{}", "0"]),
+    };
+    const fingerprint = await sha256Utf8(JSON.stringify([input.chain, input.contract, input.account, input.method, input.intent]));
+    const record = await reserveJournal({ ...input, operationFingerprint: fingerprint });
+    const readback = JSON.stringify({ revision: "1", last_operation: { method: "create_schema_case", caller: creator } });
+    mocks.getTransaction.mockResolvedValue({ statusName: "FINALIZED", txExecutionResultName: "FINISHED_WITH_RETURN" });
+    mocks.readContract.mockResolvedValueOnce("4").mockResolvedValueOnce(readback);
+
+    const result = await contract.reconcileJournalRecord(record);
+
+    expect(result.record.status).toBe("VERIFIED");
+    expect(result.readback).toBe(readback);
+  });
+
   it("retains reconciliation when finality is not available", async () => {
     const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
     const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
