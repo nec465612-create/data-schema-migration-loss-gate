@@ -81,6 +81,14 @@ export function canonicalJson(value: unknown): string {
   throw new Error("UNSUPPORTED_HASH_VALUE");
 }
 
+export function parseCaseRecord(encoded: string): Record<string, any> {
+  const record = JSON.parse(encoded) as Record<string, any>;
+  for (const key of ["base", "response", "result"]) {
+    if (typeof record[key] === "string") record[key] = JSON.parse(record[key]);
+  }
+  return record;
+}
+
 export function decimal(value: unknown): string {
   const result = typeof value === "bigint" ? value.toString() : String(value);
   if (!decimalPattern.test(result)) throw new Error("BAD_DECIMAL");
@@ -696,7 +704,7 @@ export async function writeAndVerify(
       encoded = await readView("get_version", [BigInt(caseId), BigInt(revision)]);
       await reconcileIfContextChanged();
       if (encoded !== "null") {
-        const parsed = JSON.parse(encoded) as Record<string, any>;
+        const parsed = parseCaseRecord(encoded);
         if (
           parsed.revision === revision
         ) {

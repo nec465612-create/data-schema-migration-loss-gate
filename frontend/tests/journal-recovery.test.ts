@@ -58,6 +58,15 @@ beforeEach(() => {
 });
 
 describe("journal recovery reconciliation", () => {
+  it("decodes nested case JSON returned by the contract", () => {
+    expect(contract.parseCaseRecord(JSON.stringify({
+      phase: "BASE_DRAFT",
+      base: JSON.stringify({ old: [{ id: "name" }], new: [{ id: "name" }] }),
+      response: "{}",
+      result: "{}",
+    }))).toMatchObject({ base: { old: [{ id: "name" }] }, response: {}, result: {} });
+  });
+
   it("reconciles a retained transaction against finalized status and historical readback", async () => {
     const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
     const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });

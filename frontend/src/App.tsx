@@ -10,6 +10,7 @@ import {
   getWalletSession,
   getWalletState,
   openWalletChooser,
+  parseCaseRecord,
   reconcileJournalRecord,
   readView,
   subscribeWalletSession,
@@ -297,7 +298,7 @@ function App() {
     try {
       const encoded = await readView("get_case", [BigInt(id)]);
       if (encoded === "null") throw new Error("CASE_NOT_FOUND");
-      const record = JSON.parse(encoded) as Record<string, any>;
+      const record = parseCaseRecord(encoded);
       setCaseId(id);
       setCaseRecord(record);
       if (record.base) {
@@ -328,7 +329,7 @@ function App() {
     try {
       const result = await writeAndVerify(request, setProgress, { signal: controller.signal });
       setCaseId(result.caseId);
-      const record = JSON.parse(result.encoded) as Record<string, any>;
+      const record = parseCaseRecord(result.encoded);
       setCaseRecord(record);
       if (request.method === "create_schema_case" || request.method === "replace_schemas") {
         setMappingRows(initialMappingRows(
