@@ -235,6 +235,10 @@ function App() {
   const canWrite = connection?.canWrite === true;
   const account = connection?.account ?? null;
 
+  useEffect(() => {
+    if (account && !mapper) setMapper(account);
+  }, [account, mapper]);
+
   function resetNotice() { setError(""); setMessage(""); }
 
   async function showWalletChooser() {
