@@ -215,6 +215,76 @@ def test_invalid_mapping_and_stale_revision_do_not_mutate(
     assert contract.get_case(case_id) == before
 
 
+@pytest.mark.parametrize("bad_type", [[], {}, 1], ids=["list", "dict", "integer"])
+def test_non_string_field_type_rejects_deterministically_without_state_change(
+    direct_vm, direct_deploy, direct_alice, direct_bob, bad_type
+):
+    contract = direct_deploy("contracts/main.py")
+    direct_vm.sender = direct_alice
+    with pytest.raises(Exception, match="BAD_FIELD"):
+        contract.create_schema_case(
+            "c" * 32,
+            direct_bob,
+            as_json(schema([field("name", field_type=bad_type)], [field("name")])),
+            0,
+        )
+    assert int(contract.get_count()) == 0
+
+
+@pytest.mark.parametrize("bad_transform", [[], {}, 1], ids=["list", "dict", "integer"])
+def test_non_string_mapping_transform_rejects_without_state_change(
+    direct_vm, direct_deploy, direct_alice, direct_bob, bad_transform
+):
+    contract, case_id = deploy_case(
+        direct_vm,
+        direct_deploy,
+        direct_alice,
+        direct_bob,
+        schema([field("name")], [field("name")]),
+    )
+    direct_vm.sender = direct_alice
+    contract.lock_schemas(case_id, 1)
+    direct_vm.sender = direct_bob
+    before = contract.get_case(case_id)
+    invalid = response([mapping("name", "name", bad_transform)])
+    with pytest.raises(Exception, match="BAD_MAPPING"):
+        contract.put_mapping(case_id, as_json(invalid), 2)
+    assert contract.get_case(case_id) == before
+    assert contract.get_version(case_id, 3) == "null"
+
+
+@pytest.mark.parametrize("bad_meaning", [[], {}, 1], ids=["list", "dict", "integer"])
+def test_non_string_result_meaning_rejects_without_state_change(
+    direct_vm, direct_deploy, direct_alice, direct_bob, bad_meaning
+):
+    direct_vm.check_pickling = True
+    direct_vm.mock_llm(
+        r"(?s).*BEGIN_UNTRUSTED_BASE_JSON.*",
+        json.dumps({"v": 1, "meanings": [bad_meaning]}),
+    )
+    contract, case_id = deploy_case(
+        direct_vm,
+        direct_deploy,
+        direct_alice,
+        direct_bob,
+        schema([field("name")], [field("name")]),
+    )
+    advance_to_frozen(
+        direct_vm,
+        contract,
+        case_id,
+        direct_alice,
+        direct_bob,
+        as_json(response([mapping("name", "name", "IDENTITY")])),
+    )
+    direct_vm.sender = direct_alice
+    before = contract.get_case(case_id)
+    with pytest.raises(Exception, match="BAD_RESULT"):
+        contract.evaluate_migration(case_id, 4)
+    assert contract.get_case(case_id) == before
+    assert contract.get_version(case_id, 5) == "null"
+
+
 def test_semantic_same_is_lossless_with_validator_reproduction(
     direct_vm, direct_deploy, direct_alice, direct_bob
 ):

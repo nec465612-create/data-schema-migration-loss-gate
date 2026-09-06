@@ -120,7 +120,7 @@ def _validate_id(value: str):
 def _validate_field(field):
     _require_exact(field, ("id", "type", "required", "meaning", "values"))
     _validate_id(field["id"])
-    if field["type"] not in FIELD_TYPES:
+    if not isinstance(field["type"], str) or field["type"] not in FIELD_TYPES:
         _fail("BAD_FIELD")
     if not isinstance(field["required"], bool):
         _fail("BAD_FIELD")
@@ -204,7 +204,7 @@ def _validate_response(base, response):
             _fail("BAD_MAPPING")
         if not isinstance(new_id, str) or len(new_id.encode("utf-8")) > 16:
             _fail("BAD_MAPPING")
-        if transform not in TRANSFORMS:
+        if not isinstance(transform, str) or transform not in TRANSFORMS:
             _fail("BAD_MAPPING")
         seen_old.add(old_id)
         if transform == "DROP":
@@ -294,7 +294,7 @@ def _validate_result(result, expected_length: int, forced):
     if len(meanings) != expected_length:
         _fail("BAD_RESULT")
     for index, meaning in enumerate(meanings):
-        if meaning not in MEANINGS:
+        if not isinstance(meaning, str) or meaning not in MEANINGS:
             _fail("BAD_RESULT")
         if forced[index] == "SKIP_DROP" and meaning != "SKIP_DROP":
             _fail("BAD_RESULT")
