@@ -490,7 +490,28 @@ export async function reconcileJournalRecord(record: JournalRecord): Promise<Jou
     };
   }
   if (!record.tx_hash) {
-    return { record, readback: null, detail: "No transaction hash retained; keep this signing reservation and do not resubmit blindly." };
+    const context = journalReadbackContext(record);
+    if (!context || context.caseId || record.method !== "create_schema_case") {
+      return { record, readback: null, detail: "No transaction hash retained; keep this signing reservation and do not resubmit blindly." };
+    }
+    const args = JSON.parse(record.args_json) as unknown[];
+    const caseId = decimal(await readView("get_id_by_nonce", [record.account, String(args[0])]));
+    if (caseId === "0") {
+      const rejected = await updateJournal(record.reservation, { status: "REJECTED" });
+      return { record: rejected, readback: null, detail: "No submitted transaction or matching on-chain nonce was found; the unsigned reservation is released." };
+    }
+    const verification = journalVerification(record);
+    if (!verification) return { record, readback: null, detail: "Stored arguments do not provide a safe canonical verification context." };
+    const encoded = await readView("get_version", [BigInt(caseId), BigInt(context.revision)]);
+    const parsed = parseCaseRecord(encoded);
+    const operation = parsed.last_operation as Record<string, unknown> | undefined;
+    const argsHash = await sha256Utf8(canonicalJson(verification.argsForHash));
+    if (operation?.method !== record.method || operation.caller !== record.account || operation.args_hash !== argsHash) {
+      const reconcile = await updateJournal(record.reservation, { status: "RECONCILE" });
+      return { record: reconcile, readback: encoded, detail: "The nonce exists, but its authoritative readback does not match the retained operation." };
+    }
+    const verified = await updateJournal(record.reservation, { status: "VERIFIED" });
+    return { record: verified, readback: encoded, detail: `Recovered create case ${caseId} from authoritative nonce and revision readback.` };
   }
   const transaction = await readClient.getTransaction({ hash: record.tx_hash });
   if (!isFinalized(transaction)) {

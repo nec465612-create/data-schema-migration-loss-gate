@@ -8,6 +8,7 @@ export type JournalStatus =
   | "SIGNING"
   | "SUBMITTED"
   | "RECONCILE"
+  | "REJECTED"
   | "VERIFIED"
   | "FINALIZED_ERROR"
   | "QUARANTINED";
@@ -81,7 +82,7 @@ export function validateJournalRecord(value: unknown): JournalRecord {
   if (!HEX64_RE.test(value.pre_hash as string) || !(/^$|^0x[0-9a-f]{64}$/.test(value.tx_hash as string))) {
     throw new Error("CORRUPT_JOURNAL");
   }
-  if (!["SIGNING", "SUBMITTED", "RECONCILE", "VERIFIED", "FINALIZED_ERROR", "QUARANTINED"].includes(status)) {
+  if (!["SIGNING", "SUBMITTED", "RECONCILE", "REJECTED", "VERIFIED", "FINALIZED_ERROR", "QUARANTINED"].includes(status)) {
     throw new Error("CORRUPT_JOURNAL");
   }
   return { ...value, contract: (value.contract as string).toLowerCase(), account: (value.account as string).toLowerCase() } as JournalRecord;
@@ -289,7 +290,7 @@ export async function archiveJournalRecord(reservation: string, exported: boolea
     const raw = store.getItem(key);
     if (raw === null) throw new Error("JOURNAL_NOT_FOUND");
     const record = parseStoredRecord(key, raw);
-    if (!["VERIFIED", "FINALIZED_ERROR"].includes(record.status)) {
+    if (!["REJECTED", "VERIFIED", "FINALIZED_ERROR"].includes(record.status)) {
       throw new Error("ARCHIVE_NOT_ALLOWED");
     }
     store.removeItem(key);

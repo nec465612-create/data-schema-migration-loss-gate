@@ -605,7 +605,7 @@ function App() {
           <div className="section-heading">
             <div>
               <h2 id="journal-heading">Recovery journal</h2>
-              <p className="muted">Read-only retained transaction context. Export a record before archiving it.</p>
+              <p className="muted">Read-only retained transaction context. Export a terminal record before archiving it.</p>
             </div>
             <button type="button" className="quiet-button" onClick={() => void reconcileJournal()}>Reconcile stored context</button>
           </div>
@@ -675,7 +675,7 @@ function App() {
                     <button
                       type="button"
                       className="quiet-button"
-                      disabled={!journalExported[record.reservation] || !["VERIFIED", "FINALIZED_ERROR"].includes(record.status)}
+                      disabled={!journalExported[record.reservation] || !["REJECTED", "VERIFIED", "FINALIZED_ERROR"].includes(record.status)}
                       onClick={() => void archiveExportedJournal(record)}
                     >
                       Archive after export

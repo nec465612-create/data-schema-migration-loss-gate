@@ -192,6 +192,39 @@ describe("journal recovery reconciliation", () => {
     expect(mocks.readContract).not.toHaveBeenCalled();
   });
 
+  it("releases an unsigned create reservation only when nonce readback is empty", async () => {
+    const nonce = "9b1d4f7a2c6e8b1035d9a7c1f4e6b820";
+    const input = { ...baseInput, method: "create_schema_case", intent: `create:${account}:${nonce}`, args_json: JSON.stringify([nonce, "0x3333333333333333333333333333333333333333", "{}", "0"]), tx_hash: "", status: "SIGNING" as const };
+    const fingerprint = await sha256Utf8(JSON.stringify([input.chain, input.contract, input.account, input.method, input.intent]));
+    const record = await reserveJournal({ ...input, operationFingerprint: fingerprint });
+    mocks.readContract.mockResolvedValue("0");
+
+    const result = await contract.reconcileJournalRecord(record);
+
+    expect(result.record.status).toBe("REJECTED");
+    expect(result.detail).toContain("reservation is released");
+    expect(mocks.getTransaction).not.toHaveBeenCalled();
+  });
+
+  it("verifies an unsigned create reservation when nonce and revision match", async () => {
+    const creator = account;
+    const nonce = "9b1d4f7a2c6e8b1035d9a7c1f4e6b820";
+    const mapper = "0x3333333333333333333333333333333333333333";
+    const base = { old: [{ id: "name" }], new: [{ id: "name" }] };
+    const input = { ...baseInput, method: "create_schema_case", intent: `create:${creator}:${nonce}`, args_json: JSON.stringify([nonce, mapper, JSON.stringify(base), "0"]), tx_hash: "", status: "SIGNING" as const };
+    const fingerprint = await sha256Utf8(JSON.stringify([input.chain, input.contract, input.account, input.method, input.intent]));
+    const record = await reserveJournal({ ...input, operationFingerprint: fingerprint });
+    const argsHash = await sha256Utf8(contract.canonicalJson([nonce, mapper, base, "0"]));
+    const readback = JSON.stringify({ revision: "1", phase: "BASE_DRAFT", last_operation: { method: "create_schema_case", caller: creator, args_hash: argsHash } });
+    mocks.readContract.mockResolvedValueOnce("5").mockResolvedValueOnce(readback);
+
+    const result = await contract.reconcileJournalRecord(record);
+
+    expect(result.record.status).toBe("VERIFIED");
+    expect(result.readback).toBe(readback);
+    expect(mocks.getTransaction).not.toHaveBeenCalled();
+  });
+
   it("quarantines a mixed-journal record from another contract without querying it", async () => {
     const currentFingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
     const foreignInput = { ...baseInput, contract: "0x8888888888888888888888888888888888888888", tx_hash: `0x${"c".repeat(64)}` };
