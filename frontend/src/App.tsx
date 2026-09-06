@@ -36,6 +36,7 @@ import "./styles.css";
 type FieldType = "TEXT" | "INT" | "BOOL" | "ENUM";
 type Field = { id: string; type: FieldType; required: boolean; meaning: string; values: string[] };
 type DefaultRow = { new_id: string; value: string };
+type RecoverableMethod = "put_mapping" | "freeze_mapping";
 
 const blankField = (id: string): Field => ({ id, type: "TEXT", required: true, meaning: "same declared meaning", values: [] });
 const initialOld: Field[] = [blankField("name")];
@@ -207,6 +208,7 @@ function App() {
   const [journalExported, setJournalExported] = useState<Record<string, boolean>>({});
   const [knownHashes, setKnownHashes] = useState<Record<string, string>>({});
   const [recoveryHash, setRecoveryHash] = useState("");
+  const [recoveryMethod, setRecoveryMethod] = useState<RecoverableMethod>("put_mapping");
   const [progress, setProgress] = useState<WriteProgress>({ phase: "IDLE" });
   const writeAbortRef = useRef<AbortController | null>(null);
   const walletTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -369,17 +371,22 @@ function App() {
     }
   }
 
-  async function recoverPutMapping() {
+  function recoveryRequest(): WriteRequest {
+    if (recoveryMethod === "put_mapping") return putRequest();
+    return caseRequest("freeze_mapping", (record) => record.phase === "FROZEN");
+  }
+
+  async function recoverKnownWrite() {
     resetNotice();
     if (!account || !caseRecord || !caseId) { setError("RECOVERY_CASE_REQUIRED"); return; }
     try {
-      const result = await recoverSubmittedWrite(putRequest(), account, recoveryHash.trim());
+      const result = await recoverSubmittedWrite(recoveryRequest(), account, recoveryHash.trim());
       setJournal((current) => [...current, result.record]);
       setJournalReadbacks((current) => ({ ...current, [result.record.reservation]: result.encoded }));
       setCaseRecord(parseCaseRecord(result.encoded));
       setRecoveryHash("");
       setProgress({ phase: "SUCCESS", hash: result.record.tx_hash });
-      setMessage("Recovered submitted put_mapping hash and verified the exact historical readback; no transaction was resubmitted.");
+      setMessage(`Recovered submitted ${recoveryMethod} hash and verified the exact historical readback; no transaction was resubmitted.`);
     } catch (caught) { setError(String(caught)); }
   }
 
@@ -678,13 +685,17 @@ function App() {
             </div>
           )}
           <div className="toolbar journal-recovery-form">
+            <select aria-label="Recovery method" value={recoveryMethod} onChange={(event) => setRecoveryMethod(event.target.value as RecoverableMethod)}>
+              <option value="put_mapping">put_mapping</option>
+              <option value="freeze_mapping">freeze_mapping</option>
+            </select>
             <input
-              aria-label="Known submitted put_mapping hash"
+              aria-label="Known submitted transaction hash"
               value={recoveryHash}
               onChange={(event) => setRecoveryHash(event.target.value)}
-              placeholder="Recover a submitted put_mapping hash"
+              placeholder="Recover a submitted transaction hash"
             />
-            <button type="button" className="quiet-button" onClick={() => void recoverPutMapping()} disabled={!account || !caseRecord || !caseId || !recoveryHash.trim()}>
+            <button type="button" className="quiet-button" onClick={() => void recoverKnownWrite()} disabled={!account || !caseRecord || !caseId || !recoveryHash.trim()}>
               Recover and verify hash
             </button>
           </div>
