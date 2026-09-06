@@ -183,7 +183,7 @@ describe("transaction polling controls", () => {
     expect(mocks.getTransaction).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps polling long enough for a normal fourth-check finalization", async () => {
+  it("keeps polling through the bounded Studionet finalization window", async () => {
     vi.stubGlobal("window", {
       setTimeout(callback: () => void) { callback(); return 0; },
       clearTimeout() { /* immediate test timers leave no pending handle */ },
@@ -192,12 +192,15 @@ describe("transaction polling controls", () => {
       .mockResolvedValueOnce({ statusName: "PENDING" })
       .mockResolvedValueOnce({ statusName: "PENDING" })
       .mockResolvedValueOnce({ statusName: "PENDING" })
+      .mockResolvedValueOnce({ statusName: "PENDING" })
+      .mockResolvedValueOnce({ statusName: "PENDING" })
+      .mockResolvedValueOnce({ statusName: "PENDING" })
       .mockResolvedValueOnce({ statusName: "FINALIZED", txExecutionResultName: "FINISHED_WITH_RETURN" });
     await configureReadback();
     await contract.connectWallet({ id: "fixture", name: "MetaMask", rdns: "io.metamask", provider: walletFixture().provider });
 
     await expect(contract.writeAndVerify(request())).resolves.toMatchObject({ caseId: "1" });
-    expect(mocks.getTransaction).toHaveBeenCalledTimes(4);
+    expect(mocks.getTransaction).toHaveBeenCalledTimes(7);
     expect(enumerateJournal()).toMatchObject([{ status: "VERIFIED", tx_hash: txHash }]);
   });
 });

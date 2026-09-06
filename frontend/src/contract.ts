@@ -816,7 +816,7 @@ export async function writeAndVerify(
     let transaction: any = null;
     onProgress({ phase: "WAITING_FOR_FINALITY", hash: txHash });
     let lastReceiptError: unknown = null;
-    for (const baseDelay of [2000, 4000, 8000, 12000]) {
+    for (const baseDelay of [2000, 4000, 8000, 12000, 16000, 20000, 24000]) {
       await wait(lastReceiptError ? boundedBackoff(baseDelay) : baseDelay, options.signal);
       await reconcileIfContextChanged();
       try {
