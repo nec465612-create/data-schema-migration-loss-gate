@@ -2,7 +2,7 @@
 
 `DOCUMENT_STATUS: PRE_DEPLOY_READINESS_NOT_APPROVED`
 
-This package is `DSM-LG-PREDEPLOY-9B70AB6`, a local exact-revision candidate for anonymous PRE_DEPLOY review. It is not PRE_DEPLOY approval, deployment approval, live evidence, or release approval. The current reviewer route and later live Studio evidence remain open gates; the required Claude presentation result is received and recorded below.
+This package is `DSM-LG-PREDEPLOY-FFCA82C`, a local exact-revision candidate for anonymous PRE_DEPLOY review. It is not PRE_DEPLOY approval, deployment approval, live evidence, or release approval. The current reviewer route and later live Studio evidence remain open gates; the required Claude presentation result is received and recorded below.
 
 ## Scope and classification
 
@@ -12,7 +12,7 @@ This package is `DSM-LG-PREDEPLOY-9B70AB6`, a local exact-revision candidate for
 - Classification: `INTENTIONALLY FROZEN`
 - Upgrade method/storage: none
 - Deployment target: Studionet only, after PRE_DEPLOY approval
-- Source Git revision: `9b70ab6f0cdc9e9acd0b2db65e944bf97fcdd0bf` (`Complete frontend presentation corrections`)
+- Source Git revision: `ffca82cd66efdfe46c87211184e3e4fd0a00ccae` (`Reject malformed enum values deterministically`)
 - Contract address: not deployed
 
 ## Classification decision record
@@ -41,6 +41,12 @@ This package is `DSM-LG-PREDEPLOY-9B70AB6`, a local exact-revision candidate for
 
 The required matrix-before-Studio ordering was breached and is recorded explicitly. The read-only Studio page/probe occurred at `2026-09-06T02:01:17.3913691+07:00`; `2dc9d511d5f9e873526cb9aefb04655865b44013` at `2026-09-06T02:03:22+07:00` still had only the coarse Studio table; the complete numeric matrix was first committed at `2026-09-06T02:10:09+07:00` in `601efde0b7c7ff526c1c749d28ae5da5f40d1cc4`. The matrix content is complete, but this chronology is not retroactively compliant. The read-only probe is not Studio E2E/live evidence; no replay or redeploy will be used to repair it. PRE_DEPLOY and all further Studio actions remain blocked pending reviewer confirmation of this disposition/evidence-plan adjustment.
 
+## F-014 deterministic malformed-enum correction
+
+The retained reviewer finding was that list/dict control values could raise an uncontrolled Python `TypeError` during set membership before the contract's deterministic error path. The correction is limited to validation guards in `contracts/main.py`: `field["type"]`, mapping `transform`, and every result `meaning` now require `str` before membership in `FIELD_TYPES`, `TRANSFORMS`, or `MEANINGS`, producing `BAD_FIELD`, `BAD_MAPPING`, or `BAD_RESULT` respectively.
+
+`tests/test_contract.py` adds three direct-runtime parametrized regression families covering `list`, `dict`, and integer values (9 cases total). Each case asserts the deterministic rejection and the relevant state remains unchanged; the result-meaning family also runs with pickling checks enabled. No other allowlist-set membership exists in the source validator path.
+
 ## Exact upstream package
 
 ```text
@@ -55,8 +61,8 @@ STAGE-2.md SHA-256:                  A44237E81EB8C9336F3AC74444BFE7972D2DF165377
 |---|---|---|
 | Contract lint | `genvm-lint check contracts/main.py --json` | PASS; 14 methods, 7 views, 7 writes |
 | Contract schema | `genvm-lint schema contracts/main.py --output contract-schema.json` | PASS |
-| Contract typecheck | `genvm-lint typecheck contracts/main.py` | PASS |
-| Direct runtime | `gltest -q tests` | PASS; 8 tests |
+| Contract typecheck | `genvm-lint typecheck contracts/main.py` | PASS; no type errors (UTF-8 console used for the checkmark output) |
+| Direct runtime | `gltest -q tests` | PASS; 17 tests |
 | Frontend unit | `npm run test` in `frontend` | PASS; 9 files / 21 tests |
 | Frontend build | `npm run build` in `frontend` | PASS; Vite build; non-blocking chunk-size warning |
 | Browser smoke | `npm run playwright` in `frontend` | PASS; 3 tests |
@@ -70,9 +76,9 @@ The frontend unit result includes journal integrity, caller-fingerprint validati
 ## Exact source manifest at the source revision
 
 ```text
-contracts/main.py                         C2D0CA66B7533FF243C31988EC3652290B940A3D78BA0BEC02C7D7D04C517589
+contracts/main.py                         B6FB7698965E0A513871A68479D2BF4A455B67BABAE7199E9AE1155E73AFDE04
 contract-schema.json                      16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF
-tests/test_contract.py                    95F2ED51FABB7963D239CA1A9AB5A5412B2EAAF0C031ED6FBB42C13B1D5F8E6C
+tests/test_contract.py                    9A94264EDEBD1757A278D9142B4862D27AE164F58F7670A5DC28E33F9255F9FC
 probes/schema_probe.py                   56E77FB226EE223100AFDA26E6CC8797A048EBB5E90157AB8F6114F53122A8B9
 probes/schema_probe.json                 E8D8C7F03BE1AD732393A792DED323DC56AD391E689D6CF908E2068E50C4CFF3
 frontend/src/App.tsx                     F34DC3508309B8D0A07A7ED8C43445E9D4E226BE3B68E06778617A840F42AC41
