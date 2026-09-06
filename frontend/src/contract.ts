@@ -26,6 +26,14 @@ export type WalletOption = {
   icon?: string;
   provider: Eip1193Provider;
 };
+export type WalletPhase = "DISCONNECTED" | "DISCOVERING" | "CHOOSER_OPEN" | "CONNECTING" | "CONNECTED" | "WRONG_CHAIN" | "ERROR";
+export type WalletState = {
+  phase: WalletPhase;
+  wallets: readonly WalletOption[];
+  selectedWalletId: string | null;
+  session: WalletSession | null;
+  error: string | null;
+};
 
 const chains: Record<ChainName, any> = {
   localnet,
@@ -88,13 +96,19 @@ const sessionListeners = new Set<() => void>();
 let removeSessionListeners = () => undefined;
 let sessionGeneration = 0;
 let walletRevision = 0;
+let walletState: WalletState = Object.freeze({ phase: "DISCONNECTED", wallets: [], selectedWalletId: null, session: null, error: null });
 
 export type WalletSession = {
   account: string;
   chainId: string;
   expectedChainId: string;
   canWrite: boolean;
+  wallet: Pick<WalletOption, "id" | "name" | "rdns" | "icon">;
 };
+
+export function getWalletState(): WalletState {
+  return walletState;
+}
 
 export function getWalletSession(): WalletSession | null {
   return walletSession;
@@ -107,6 +121,11 @@ export function subscribeWalletSession(listener: () => void): () => void {
 
 function publishWalletSession(): void {
   sessionListeners.forEach((listener) => listener());
+}
+
+function publishWalletState(next: WalletState): void {
+  walletState = Object.freeze({ ...next, wallets: Object.freeze([...next.wallets]) });
+  publishWalletSession();
 }
 
 function validAccount(value: unknown): string | null {
@@ -133,13 +152,19 @@ function commitWalletSession(next: Omit<WalletSession, "canWrite"> | null): void
   if (!next) {
     walletSession = null;
     writeClient = null;
-    publishWalletSession();
+    publishWalletState({ phase: "DISCONNECTED", wallets: walletState.wallets, selectedWalletId: null, session: null, error: null });
     return;
   }
   const canWrite = Boolean(sessionClient && chainMatches(next.expectedChainId, next.chainId));
   walletSession = { ...next, canWrite };
   writeClient = canWrite ? sessionClient : null;
-  publishWalletSession();
+  publishWalletState({
+    phase: canWrite ? "CONNECTED" : "WRONG_CHAIN",
+    wallets: walletState.wallets,
+    selectedWalletId: next.wallet.id,
+    session: walletSession,
+    error: null,
+  });
 }
 
 function installSessionListeners(provider: Eip1193Provider): void {
@@ -282,6 +307,45 @@ export async function discoverWallets(): Promise<WalletOption[]> {
   return Array.from(discoveredWallets.values());
 }
 
+export async function openWalletChooser(): Promise<WalletState> {
+  if (walletSession) disconnectWallet();
+  publishWalletState({ phase: "DISCOVERING", wallets: [], selectedWalletId: null, session: null, error: null });
+  try {
+    const wallets = await discoverWallets();
+    publishWalletState({ phase: "CHOOSER_OPEN", wallets, selectedWalletId: null, session: null, error: null });
+  } catch (caught) {
+    publishWalletState({ phase: "ERROR", wallets: [], selectedWalletId: null, session: null, error: String(caught) });
+  }
+  return walletState;
+}
+
+export function closeWalletChooser(): void {
+  if (walletState.phase === "CHOOSER_OPEN" || walletState.phase === "DISCOVERING" || walletState.phase === "ERROR") {
+    publishWalletState({ phase: "DISCONNECTED", wallets: walletState.wallets, selectedWalletId: null, session: null, error: null });
+  }
+}
+
+function publicWalletError(caught: unknown): string {
+  const value = caught as { code?: number; message?: string };
+  if (value?.code === 4001 || /reject|denied|cancel/i.test(value?.message ?? "")) {
+    return "Connection request was rejected. Choose a wallet when you are ready to try again.";
+  }
+  if (/account/i.test(value?.message ?? "")) return "The wallet did not return an active account. Unlock it and try again.";
+  return "The wallet could not connect. Check that it is unlocked, then choose it again.";
+}
+
+export async function selectWallet(walletId: string): Promise<WalletSession> {
+  const wallet = walletState.wallets.find((option) => option.id === walletId);
+  if (!wallet) throw new Error("WALLET_SELECTION_UNAVAILABLE");
+  publishWalletState({ ...walletState, phase: "CONNECTING", selectedWalletId: wallet.id, error: null });
+  try {
+    return await connectWallet(wallet);
+  } catch (caught) {
+    publishWalletState({ ...walletState, phase: "ERROR", selectedWalletId: wallet.id, session: null, error: publicWalletError(caught) });
+    throw caught;
+  }
+}
+
 export async function connectWallet(wallet: WalletOption): Promise<WalletSession> {
   const accounts = await wallet.provider.request({ method: "eth_requestAccounts" });
   const account = Array.isArray(accounts) ? validAccount(accounts[0]) : null;
@@ -291,9 +355,8 @@ export async function connectWallet(wallet: WalletOption): Promise<WalletSession
   const chainId = String(await wallet.provider.request({ method: "eth_chainId" })).toLowerCase();
   selectedProvider = wallet.provider;
   sessionClient = bindSessionClient(account);
-  commitWalletSession({ account, chainId, expectedChainId: expectedChainId() });
+  commitWalletSession({ account, chainId, expectedChainId: expectedChainId(), wallet: { id: wallet.id, name: wallet.name, rdns: wallet.rdns, icon: wallet.icon } });
   installSessionListeners(wallet.provider);
-  publishWalletSession();
   return walletSession as WalletSession;
 }
 

@@ -3,17 +3,18 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import {
   canonicalJson,
   config,
-  connectWallet,
+  closeWalletChooser,
   currentChainName,
   disconnectWallet,
-  discoverWallets,
   expectedChainId,
   getWalletSession,
+  getWalletState,
+  openWalletChooser,
   reconcileJournalRecord,
   readView,
   subscribeWalletSession,
+  selectWallet,
   switchToConfiguredNetwork,
-  WalletOption,
   WriteRequest,
   writeAndVerify,
 } from "./contract";
@@ -184,9 +185,8 @@ function SchemaTable({ title, fields, setFields }: { title: string; fields: Fiel
 }
 
 function App() {
-  const [wallets, setWallets] = useState<WalletOption[]>([]);
-  const [selectedWallet, setSelectedWallet] = useState("");
   const connection = useSyncExternalStore(subscribeWalletSession, getWalletSession, getWalletSession);
+  const wallet = useSyncExternalStore(subscribeWalletSession, getWalletState, getWalletState);
   const [oldFields, setOldFields] = useState(initialOld);
   const [newFields, setNewFields] = useState(initialNew);
   const [mappingRows, setMappingRows] = useState<MappingRow[]>(() => initialMappingRows(["name"], ["name"]));
@@ -205,6 +205,8 @@ function App() {
   const [journalExported, setJournalExported] = useState<Record<string, boolean>>({});
   const [progress, setProgress] = useState<WriteProgress>({ phase: "IDLE" });
   const writeAbortRef = useRef<AbortController | null>(null);
+  const walletTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const walletDialogRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     void rebuildJournalIndex()
@@ -235,24 +237,41 @@ function App() {
 
   function resetNotice() { setError(""); setMessage(""); }
 
-  async function findWallets() {
+  async function showWalletChooser() {
     resetNotice();
-    try {
-      const found = await discoverWallets();
-      setWallets(found);
-      setSelectedWallet(found[0]?.id ?? "");
-      setMessage(found.length ? "Choose an allowlisted wallet provider." : "No MetaMask, OKX, or Rabby EIP-6963 provider was announced.");
-    } catch (caught) { setError(String(caught)); }
+    await openWalletChooser();
   }
 
-  async function connect() {
+  async function chooseWallet(walletId: string) {
     resetNotice();
-    const wallet = wallets.find((item) => item.id === selectedWallet);
-    if (!wallet) { setError("Choose a wallet first."); return; }
     try {
-      const next = await connectWallet(wallet);
+      const next = await selectWallet(walletId);
       setMessage(chainMatches(next.expectedChainId, next.chainId) ? "Wallet connected on the configured network." : "Wallet connected on the wrong network. Switch before writing.");
-    } catch (caught) { setError(String(caught)); }
+    } catch { /* The canonical wallet store owns the public connection error. */ }
+  }
+
+  const chooserOpen = ["DISCOVERING", "CHOOSER_OPEN", "CONNECTING", "ERROR"].includes(wallet.phase) && !wallet.session;
+  useEffect(() => {
+    if (!chooserOpen) return;
+    const frame = requestAnimationFrame(() => walletDialogRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [chooserOpen]);
+
+  function closeChooser() {
+    if (wallet.phase === "CONNECTING") return;
+    closeWalletChooser();
+    requestAnimationFrame(() => walletTriggerRef.current?.focus());
+  }
+
+  function trapWalletFocus(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape" && wallet.phase !== "CONNECTING") { event.preventDefault(); closeChooser(); return; }
+    if (event.key !== "Tab") return;
+    const nodes = Array.from(walletDialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])') ?? []);
+    if (!nodes.length) return;
+    const first = nodes[0];
+    const last = nodes[nodes.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   }
 
   async function switchNetwork() {
@@ -419,7 +438,7 @@ function App() {
   return (
     <>
       <a href="#main-content" className="skip-link">Skip to main workstation</a>
-      <main className="app-shell" id="main-content">
+      <main className="app-shell" id="main-content" inert={chooserOpen ? true : undefined}>
         <header className="header-row">
           <div className="brand-unit">
             <div className="brand-mark" aria-hidden="true">
@@ -436,9 +455,21 @@ function App() {
               <p className="eyebrow">C3 · Public Evidence Gate</p>
             </div>
           </div>
-          <div className={`chain-badge ${onCorrectChain ? "good" : "warn"}`}>
-            <span className="status-dot" />
-            {connection ? (onCorrectChain ? `Connected · ${currentChainName()}` : "Wrong wallet chain") : "Disconnected"}
+          <div className="wallet-header" id="wallet">
+            {connection ? (
+              <>
+                <div className={`wallet-identity ${onCorrectChain ? "good" : "warn"}`}>
+                  <span className="status-dot" />
+                  <span><strong>{connection.wallet.name}</strong><small>{`${connection.account.slice(0, 6)}…${connection.account.slice(-4)}`} · {onCorrectChain ? currentChainName() : "Wrong network"}</small></span>
+                </div>
+                {!onCorrectChain && <button type="button" onClick={switchNetwork}>Switch network</button>}
+                <button type="button" className="quiet-button" onClick={() => { disconnectWallet(); setMessage("Wallet disconnected."); }}>Disconnect</button>
+              </>
+            ) : (
+              <button ref={walletTriggerRef} type="button" className="wallet-connect" onClick={() => void showWalletChooser()}>
+                <span className="status-dot" /> Connect wallet
+              </button>
+            )}
           </div>
         </header>
 
@@ -541,27 +572,6 @@ function App() {
               </tbody>
             </table>
           </div>
-        </section>
-
-        <section className="panel wallet-panel" id="wallet" aria-labelledby="wallet-heading">
-          <div className="section-heading">
-            <div>
-              <h2 id="wallet-heading">Wallet and network</h2>
-              <p className="muted">EIP-6963 provider discovery and session binding</p>
-            </div>
-            <span className="muted">Allowlist: MetaMask · OKX · Rabby</span>
-          </div>
-          <div className="toolbar">
-            <button type="button" onClick={findWallets}>Discover wallets</button>
-            <select value={selectedWallet} onChange={(event) => setSelectedWallet(event.target.value)} aria-label="Wallet provider">
-              <option value="">Select provider</option>
-              {wallets.map((wallet) => <option key={wallet.id} value={wallet.id}>{wallet.name}</option>)}
-            </select>
-            <button type="button" onClick={connect} disabled={!selectedWallet}>Connect</button>
-            {connection && !onCorrectChain && <button type="button" className="quiet-button" onClick={switchNetwork}>Switch to {currentChainName()}</button>}
-            {connection && <button type="button" className="quiet-button" onClick={() => { disconnectWallet(); setMessage("Wallet disconnected."); }}>Disconnect</button>}
-          </div>
-          <p className="muted">Expected chain ID: {expectedChainId()} · account: {account ?? "None"}</p>
         </section>
 
         <section className="panel journal-panel" id="recovery-journal" aria-labelledby="journal-heading">
@@ -890,6 +900,30 @@ function App() {
           {error && <span className="error-text">{error}</span>}
         </div>
       </main>
+      {chooserOpen && (
+        <div className="wallet-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && wallet.phase !== "CONNECTING") closeChooser(); }}>
+          <div className="wallet-dialog" role="dialog" aria-modal="true" aria-labelledby="wallet-dialog-title" tabIndex={-1} ref={walletDialogRef} onKeyDown={trapWalletFocus}>
+            <div className="wallet-dialog__heading">
+              <div><p className="eyebrow">Studionet · {expectedChainId()}</p><h2 id="wallet-dialog-title">Connect wallet</h2></div>
+              <button type="button" className="wallet-dialog__close" aria-label="Close wallet picker" disabled={wallet.phase === "CONNECTING"} onClick={closeChooser}>×</button>
+            </div>
+            <p className="muted">Choose a detected wallet. Opening this picker does not request account access.</p>
+            {wallet.phase === "CONNECTING" && <p className="wallet-connecting" role="status">Waiting for wallet approval…</p>}
+            {wallet.phase === "DISCOVERING" ? <p className="wallet-empty">Detecting supported wallets…</p> : wallet.wallets.length ? (
+              <div className="wallet-options">
+                {wallet.wallets.map((option) => (
+                  <button type="button" className="wallet-option" key={option.id} disabled={wallet.phase === "CONNECTING"} onClick={() => void chooseWallet(option.id)}>
+                    {option.icon ? <img src={option.icon} alt="" /> : <span className={`wallet-fallback wallet-fallback--${option.rdns.replaceAll(".", "-")}`} aria-hidden="true">{option.name === "MetaMask" ? "M" : option.name === "Rabby" ? "R" : "OKX"}</span>}
+                    <span><strong>{option.name}</strong><small>Detected in this browser</small></span><span aria-hidden="true">→</span>
+                  </button>
+                ))}
+              </div>
+            ) : <p className="wallet-empty">No supported wallet was detected. Install or enable MetaMask, OKX Wallet, or Rabby, then reopen this picker.</p>}
+            {(wallet.error || error) && <p className="wallet-error" role="alert">{wallet.error || error}</p>}
+            <button type="button" className="wallet-cancel" disabled={wallet.phase === "CONNECTING"} onClick={closeChooser}>Cancel</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
