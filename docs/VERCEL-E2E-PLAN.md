@@ -4,7 +4,7 @@
 
 `FINAL_PACKAGE: DSM-LG-FINAL-0DD3175`
 
-This approved minimum-sufficient judge-perspective plan was executed on final frontend release `0dd3175a4c4ce991015307dc97c61eef43d0f175`, Vercel deployment `dpl_9kf456TWHDGPrHyLQ3h64o8Y8td7`. Exact results are recorded in `docs/VERIFICATION.md`.
+This approved minimum-sufficient judge-perspective plan was executed on final frontend release `0dd31751281e89ed764356770d357b7862615505`, Vercel deployment `dpl_9kf456TWHDGPrHyLQ3h64o8Y8td7`. Exact results are recorded in `docs/VERIFICATION.md`.
 
 ## Release identity and actor boundary
 
@@ -62,7 +62,7 @@ The separate `FRONTEND RPC BUDGET MATRIX` is `docs/RPC-BUDGET.md`. Planned ceili
 - wallet connect: at most the explicit discovery/account/chain sequence in the matrix;
 - list IDs: one explicit read;
 - open detail: one explicit read;
-- one write: at most `10` observable calls in the bounded coordinator (`1` submission, up to `7` receipt polls, up to `2` authoritative readbacks);
+- one write: at most `13` physical RPC requests (`3` SDK preflight requests, `1` provider submission, up to `7` receipt polls, up to `2` authoritative readbacks);
 - retry after uncertainty: `0` automatic calls until retained-hash reconciliation and explicit user action.
 
 The exact-release request-level telemetry, hashes, transaction totals and readbacks are recorded in `docs/RPC-BUDGET.md`. Any amplification, duplicate write, unbounded polling, missing teardown or unexplained client remains a release blocker.

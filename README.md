@@ -124,7 +124,7 @@ Current verified results are 20 contract tests, 49 frontend tests and 4 Playwrig
 - Contract source SHA-256: `48E2F8D15720DAABCCA4B1D4F2DA9E336AE31A3A5D07B297201AE2B09291B53A`.
 - Contract schema SHA-256: `16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF`.
 - Judge-visible Vercel alias: `https://data-schema-migration-loss-gate.vercel.app` (corrected production deployment, HTTP 200 smoke check).
-- Final Vercel deployment: `dpl_9kf456TWHDGPrHyLQ3h64o8Y8td7`, built from release `0dd3175a4c4ce991015307dc97c61eef43d0f175`; exact-release Case 7 reached authoritative `DONE`, `LOSSLESS`, revision `5` after five unique writes and passed reload/reconnect with 58 measured RPC requests, 0 retries and 0 failures.
+- Final Vercel deployment: `dpl_9kf456TWHDGPrHyLQ3h64o8Y8td7`, built from release `0dd31751281e89ed764356770d357b7862615505`; exact-release Case 7 reached authoritative `DONE`, `LOSSLESS`, revision `5` after five unique writes and passed reload/reconnect with 58 measured RPC requests, 0 retries and 0 failures.
 
 The deployed contract is intentionally frozen. Recovery relies on preserved source/schema parity, nonce-based create reconciliation, exact revision history and deployment of a separately reviewed successor if a future change is required.
 

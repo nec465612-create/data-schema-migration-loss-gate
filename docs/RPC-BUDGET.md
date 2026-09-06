@@ -1,6 +1,6 @@
 # RPC Budget Matrix
 
-`DOCUMENT_STATUS: FINAL_RELEASE_MEASURED_OBSERVABLE_LEDGER`
+`DOCUMENT_STATUS: FINAL_RELEASE_MEASURED_REQUEST_TELEMETRY`
 
 This matrix is bound to the C3 Stage 2 frontend flow. The frontend section remains a plan until the exact final Vercel deployment is measured. Studio live evidence is recorded separately in `docs/VERIFICATION.md` and the local secret-free action ledger.
 
@@ -19,10 +19,12 @@ MULTI_CLIENT_JUSTIFICATION: NOT_REQUIRED
 | Screen/workflow | Request source | RPC method | Trigger | Cache key / TTL | In-flight dedupe | Invalidation | Poll interval / attempts | Retry/backoff/cancel | Planned maximum | Transaction count | Terminal/readback condition |
 |---|---|---|---|---|---|---|---|---|---:|---:|---|
 | Initial landing | App render | none | Browser load | none | n/a | n/a | none | none | 0 | 0 | No chain request |
-| Wallet discovery and connect | Canonical wallet-session store | EIP-6963; eth_requestAccounts; eth_chainId | Explicit Discover wallets or Connect | none | One shared session | Account or chain event | none | User action only; teardown cancellation | 2 | 0 | Connected session or recoverable error |
+| Initial wallet connect | Canonical wallet-session store | eth_requestAccounts; eth_chainId | Explicit wallet choice | none | One shared session | Account or chain event | none | User action only; teardown cancellation | 2 | 0 | Connected session or recoverable error |
+| Account switch | Selected EIP-1193 provider | eth_chainId | Provider accountsChanged event | none | Same selected session | Invalidates account-bound state | none | Event-driven; no retry | 1 | 0 | New account and current chain bound |
+| Reconnect after reload | Canonical wallet-session store | eth_requestAccounts; eth_chainId | Explicit wallet choice after disconnected reload | none | One shared session | Reload clears session | none | User action only; teardown cancellation | 2 | 0 | Reconnected session or recoverable error |
 | Load case IDs | Shared read client | get_count | Explicit Load IDs | chain/contract/get_count; no cache | In-flight dedupe | Account/network/contract change | none | Bounded; cancel on teardown | 1 | 0 | Contiguous IDs `1..count` or recoverable error |
 | Open case detail | Shared read client | get_case | Explicit case selection | chain/contract/get_case/[id]; no cache | In-flight dedupe | Account/network/contract change | none | Bounded; cancel on teardown | 1 | 0 | Decoded case or recoverable error |
-| One write workflow | Write coordinator | create_schema_case/replace_schemas/lock_schemas/put_mapping/freeze_mapping/evaluate_migration | Explicit action button | No cache for consequential state | One journal intent and coordinator | After write/account/network change | 2/4/8/12/16/20/24s; up to 7 | Bounded Retry-After/backoff; cancel hidden or teardown | 10 | 1 | FINALIZED plus semantic SUCCESS and authoritative readback |
+| One write workflow | Write coordinator | eth_getTransactionCount; eth_estimateGas; eth_gasPrice; eth_sendTransaction; eth_getTransactionByHash; gen_call | Explicit action button | No cache for consequential state | One journal intent and coordinator | After write/account/network change | 2/4/8/12/16/20/24s; up to 7 | Bounded Retry-After/backoff; cancel hidden or teardown | 13 | 1 | Three SDK preflight requests + one submission + up to seven status polls + up to two authoritative readbacks; FINALIZED plus semantic SUCCESS and readback |
 | Retry after uncertainty | Retained journal | retry_migration only after reconciliation | Explicit retry action | No cache | One retained intent | After reconciliation | No automatic polling | No automatic retry or resubmit | 0 | 0 | Retained hash reconciled before a new intent |
 
 ## FRONTEND RPC BUDGET EVIDENCE
@@ -44,6 +46,16 @@ The exact production release instruments JSON-RPC at both physical request bound
 
 Measured total: `58` requests = `5` wallet/session requests + `51` write-journey requests + `2` J7 reads. Cache hits/misses and in-flight deduplication are `N/A` for these consequential zero-TTL calls; no duplicate identical in-flight read occurred. Each write invalidated the prior authoritative view and ended in a fresh `gen_call` readback. There were `0` 429s, transient retries, resubmits or failed requests.
 
+### Durable telemetry digest and recomputation
+
+- Browser session: Chrome tab `1145403394`; deployment `dpl_9kf456TWHDGPrHyLQ3h64o8Y8td7`.
+- RPC time range: `2026-09-06T17:51:25.327Z` through `2026-09-06T18:07:53.664Z`.
+- Exact public JSON text: `14,226` UTF-8 bytes, `78` total scope/RPC events, SHA-256 `DD9C48DAB332906CE6928E3593B355EDC8B35E109CC785601065312B9CAF82B0`.
+- Canonical RPC-only array: `58` events, SHA-256 `0B868ED717FF4579DEC274E96DF9E7692C6D84BE49058AA1276C61953D5C3105`.
+- Methods: provider `eth_requestAccounts` 2, provider `eth_chainId` 3, provider `eth_sendTransaction` 5, HTTP `eth_getTransactionCount` 5, HTTP `eth_estimateGas` 5, HTTP `eth_gasPrice` 5, HTTP `eth_getTransactionByHash` 25, HTTP `gen_call` 8. Sum: `58`.
+- Statuses: HTTP 200 = `48`; successful provider responses = `10`; failures = `0`.
+- Scopes: wallet-connect 4; wallet-account-switch 1; create 11; lock 10; put 10; freeze 10; evaluate 10; load-case-ids 1; open-case-detail 1. Sum: `58`.
+
 ## Frontend budget
 
 | User action | Allowed automatic chain/RPC work | Implementation boundary |
@@ -51,8 +63,10 @@ Measured total: `58` requests = `5` wallet/session requests + `51` write-journey
 | Initial landing | 0 | No client read or wallet request on startup |
 | Load case IDs | 1 read | Explicit `get_count` only; contiguous IDs are derived locally |
 | Open case detail | 1 read | Explicit `get_case` only |
-| Wallet connect | 1 chain read | Account request plus one `eth_chainId` read |
-| One write | 10 maximum | 1 submission, up to 7 receipt queries at bounded 2/4/8/12/16/20/24s while visible, up to 2 authoritative readbacks at 0/4s; hidden-tab pause and abort/session teardown stop automatic polling |
+| Initial wallet connect | 2 requests | One account request plus one `eth_chainId` read |
+| Account switch | 1 request | One event-driven `eth_chainId` read; invalidates account-bound state |
+| Reconnect after reload | 2 requests | Explicit account request plus one `eth_chainId` read; no silent restore |
+| One write | 13 maximum | 3 SDK preflight HTTP requests, 1 provider submission, up to 7 receipt queries at bounded 2/4/8/12/16/20/24s while visible, up to 2 authoritative readbacks at 0/4s; hidden-tab pause and abort/session teardown stop automatic polling |
 | Retry after uncertainty | 0 automatic | User reconciles the retained hash/journal before any new intent |
 
 The write coordinator reports `WAITING_FOR_WALLET`, `SUBMITTED`, `WAITING_FOR_FINALITY`, `VERIFYING_EXECUTION`, `VERIFYING_READBACK`, and terminal states. Receipt polling pauses without RPC while the document is hidden; transient transport failures consume the same bounded receipt slots with exponential backoff and jitter; abort/session teardown removes timers and preserves a submitted hash in `RECONCILE`. Browser success is emitted only after finalized successful execution and method-specific historical readback.

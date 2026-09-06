@@ -9,7 +9,7 @@ This document binds the live Studionet evidence, public repository, final Vercel
 ## Identity
 
 - Project: `Data Schema Migration Loss Gate`
-- Deployed frontend revision: `0dd3175a4c4ce991015307dc97c61eef43d0f175`
+- Deployed frontend revision: `0dd31751281e89ed764356770d357b7862615505`
 - Package identity: `DSM-LG-FINAL-0DD3175`
 - Contract source: `contracts/main.py`
 - Contract source SHA-256: `48E2F8D15720DAABCCA4B1D4F2DA9E336AE31A3A5D07B297201AE2B09291B53A`
@@ -17,7 +17,7 @@ This document binds the live Studionet evidence, public repository, final Vercel
 - Network: Studionet, chain ID `61999`
 - Contract: `0xB6D90F9dCbf14A2C638bA62de9ec43e738FCf69d`
 - Judge-visible Vercel alias: `https://data-schema-migration-loss-gate.vercel.app`.
-- Final Vercel deployment: `dpl_9kf456TWHDGPrHyLQ3h64o8Y8td7`, target `production`, immutable URL `https://data-schema-migration-loss-gate-bnv5y5qyh-nec10.vercel.app`, built from `0dd3175a4c4ce991015307dc97c61eef43d0f175` and aliased to the judge-visible URL.
+- Final Vercel deployment: `dpl_9kf456TWHDGPrHyLQ3h64o8Y8td7`, target `production`, immutable URL `https://data-schema-migration-loss-gate-bnv5y5qyh-nec10.vercel.app`, built from `0dd31751281e89ed764356770d357b7862615505` and aliased to the judge-visible URL.
 - Prior Vercel deployment metadata: `dpl_FrgkZoLbF3d86R7qLraSCvXvZbPc` target `production`, aliases `data-schema-migration-loss-gate.vercel.app` and `data-schema-migration-loss-gate-nec10.vercel.app`, built from superseded frontend release `4c91ce1`; retained as historical evidence and not claimed as this package's corrected release.
 - Immutable deployment URL is SSO-protected (HTTP `302` to `vercel.com/sso-api`), so it is metadata-only. The mapped judge-visible alias returned HTTP `200` and is the tested public application URL.
 - Deployment transaction: `0x93825fc61758708299cd0f7b8ff94728aabbbb94453f4387296ebf4facd47d3d`
@@ -41,7 +41,7 @@ The primary AI controlled Chrome continuously on the final alias. OKX creator `0
 | J6 evaluate | `0x21756e5f3db85df3878b3713acc5405d2ae52f940d2e3ae7b2ddf0c4d2e52bfb`; automatic bounded finality/consensus/readback; `DONE`, `LOSSLESS`, revision `5`, attempts `1` | PASS |
 | J7 reload/reconnect | Reload started disconnected; explicit OKX reconnect, one ID-list `gen_call`, then one Case 7 detail `gen_call` returned visible `DONE · revision 5`, `LOSSLESS` | PASS |
 
-No Case 7 write required manual reconciliation, replacement transaction or duplicate click. Request-level telemetry recorded `58` successful RPC requests, exactly `5` `eth_sendTransaction` calls, `0` retries and `0` failures; each write used `5` bounded `eth_getTransactionByHash` polls and completed authoritative `gen_call` readback.
+No Case 7 write required manual reconciliation, replacement transaction or duplicate click. Request-level telemetry recorded `58` successful RPC requests, exactly `5` `eth_sendTransaction` calls, `0` retries and `0` failures; each write used `5` bounded `eth_getTransactionByHash` polls and completed authoritative `gen_call` readback. The exact public JSON text is bound by SHA-256 `DD9C48DAB332906CE6928E3593B355EDC8B35E109CC785601065312B9CAF82B0`; complete method/scope recomputation is in `docs/RPC-BUDGET.md`.
 
 ## Reusable live proof matrix
 
