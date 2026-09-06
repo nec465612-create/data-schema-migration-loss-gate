@@ -254,7 +254,7 @@ def _validate_response(base, response):
     for item in defaults:
         _require_exact(item, ("new_id", "value"))
         new_id = item["new_id"]
-        if new_id not in new_fields or new_id in seen_defaults or new_id in seen_new:
+        if not isinstance(new_id, str) or new_id not in new_fields or new_id in seen_defaults or new_id in seen_new:
             _fail("BAD_DEFAULT")
         seen_defaults.add(new_id)
         _parse_default(new_fields[new_id], item["value"])

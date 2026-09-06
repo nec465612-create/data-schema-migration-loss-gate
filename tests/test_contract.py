@@ -253,6 +253,31 @@ def test_non_string_mapping_transform_rejects_without_state_change(
     assert contract.get_version(case_id, 3) == "null"
 
 
+@pytest.mark.parametrize("bad_default_id", [[], {}, 1], ids=["list", "dict", "integer"])
+def test_non_string_default_id_rejects_without_state_change(
+    direct_vm, direct_deploy, direct_alice, direct_bob, bad_default_id
+):
+    contract, case_id = deploy_case(
+        direct_vm,
+        direct_deploy,
+        direct_alice,
+        direct_bob,
+        schema([field("name")], [field("name")]),
+    )
+    direct_vm.sender = direct_alice
+    contract.lock_schemas(case_id, 1)
+    direct_vm.sender = direct_bob
+    before = contract.get_case(case_id)
+    invalid = response(
+        [mapping("name", "name", "IDENTITY")],
+        defaults=[{"new_id": bad_default_id, "value": ""}],
+    )
+    with pytest.raises(Exception, match="BAD_DEFAULT"):
+        contract.put_mapping(case_id, as_json(invalid), 2)
+    assert contract.get_case(case_id) == before
+    assert contract.get_version(case_id, 3) == "null"
+
+
 @pytest.mark.parametrize("bad_meaning", [[], {}, 1], ids=["list", "dict", "integer"])
 def test_non_string_result_meaning_rejects_without_state_change(
     direct_vm, direct_deploy, direct_alice, direct_bob, bad_meaning
