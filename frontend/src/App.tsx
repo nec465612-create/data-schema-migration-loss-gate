@@ -192,7 +192,7 @@ function App() {
   const [mappingRows, setMappingRows] = useState<MappingRow[]>(() => initialMappingRows(["name"], ["name"]));
   const [defaults, setDefaults] = useState<DefaultRow[]>([]);
   const [nonce, setNonce] = useState(cryptoRandomNonce());
-  const [mapper, setMapper] = useState("");
+  const [mapper, setMapper] = useState("0x34b92E6553eaCA11A00A9d86d75d8a7881779D78");
   const [caseId, setCaseId] = useState("");
   const [caseRecord, setCaseRecord] = useState<Record<string, any> | null>(null);
   const [caseIds, setCaseIds] = useState<string[]>([]);
@@ -234,10 +234,7 @@ function App() {
   const onCorrectChain = Boolean(connection && chainMatches(connection.expectedChainId, connection.chainId));
   const canWrite = connection?.canWrite === true;
   const account = connection?.account ?? null;
-
-  useEffect(() => {
-    if (account && !mapper) setMapper(account);
-  }, [account, mapper]);
+  const mapperValid = /^0x[0-9a-fA-F]{40}$/.test(mapper.trim()) && mapper.trim().toLowerCase() !== account?.toLowerCase();
 
   function resetNotice() { setError(""); setMessage(""); }
 
@@ -660,7 +657,7 @@ function App() {
           </div>
           <div className="form-grid compact">
             <label>Creator nonce<input value={nonce} onChange={(event) => setNonce(event.target.value)} maxLength={32} /></label>
-            <label>Mapper address<input value={mapper} onChange={(event) => setMapper(event.target.value)} placeholder="0x…" /></label>
+            <label>Mapper address<input value={mapper} onChange={(event) => setMapper(event.target.value)} placeholder="0x…" aria-invalid={!mapperValid} /></label>
           </div>
           <div className="schema-grid">
             <SchemaTable title="old" fields={oldFields} setFields={setOldFields} />
@@ -679,7 +676,7 @@ function App() {
               nonce,
               verify: (record) => record.phase === "BASE_DRAFT" && record.revision === "1",
             })}
-            disabled={busy || !journalReady || !account || !canWrite || !config.contractAddress}
+            disabled={busy || !journalReady || !account || !canWrite || !config.contractAddress || !mapperValid}
           >
             Create case
           </button>

@@ -428,9 +428,9 @@ export async function reconcileJournalRecord(record: JournalRecord): Promise<Jou
     const updated = await updateJournal(record.reservation, { status: "RECONCILE" });
     return { record: updated, readback: null, detail: "Transaction is not finalized; the retained hash remains the source of truth." };
   }
-  if (transaction.txExecutionResultName !== ExecutionResult.FINISHED_WITH_RETURN) {
+  if (executionResultName(transaction) !== ExecutionResult.FINISHED_WITH_RETURN) {
     const updated = await updateJournal(record.reservation, { status: "FINALIZED_ERROR" });
-    return { record: updated, readback: null, detail: `Finalized execution failed (${transaction.txExecutionResultName ?? "UNKNOWN"}).` };
+    return { record: updated, readback: null, detail: `Finalized execution failed (${executionError(transaction)}).` };
   }
   const context = journalReadbackContext(record);
   if (!context) {
@@ -478,6 +478,23 @@ function isFinalized(transaction: any): boolean {
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function executionResultName(transaction: any): string | undefined {
+  if (transaction?.txExecutionResultName) return transaction.txExecutionResultName;
+  const leaderReceipt = transaction?.consensus_data?.leader_receipt;
+  const receipts = Array.isArray(leaderReceipt) ? leaderReceipt : [leaderReceipt].filter(Boolean);
+  const result = receipts.find((receipt: any) => receipt?.vote == null)?.execution_result ?? receipts[0]?.execution_result;
+  if (result === "SUCCESS") return ExecutionResult.FINISHED_WITH_RETURN;
+  if (result === "ERROR") return ExecutionResult.FINISHED_WITH_ERROR;
+  return undefined;
+}
+
+function executionError(transaction: any): string {
+  const leaderReceipt = transaction?.consensus_data?.leader_receipt;
+  const receipts = Array.isArray(leaderReceipt) ? leaderReceipt : [leaderReceipt].filter(Boolean);
+  const receipt = receipts.find((item: any) => item?.vote == null) ?? receipts[0];
+  return String(receipt?.result?.payload ?? receipt?.error ?? executionResultName(transaction) ?? "UNKNOWN");
 }
 
 function providerRejected(error: unknown): boolean {
@@ -657,9 +674,9 @@ export async function writeAndVerify(
       throw new Error(lastReceiptError ? "RECONCILE_RECEIPT_TRANSPORT" : "RECONCILE_RECEIPT_NOT_FINAL");
     }
     onProgress({ phase: "VERIFYING_EXECUTION", hash: txHash });
-    if (transaction.txExecutionResultName !== ExecutionResult.FINISHED_WITH_RETURN) {
+    if (executionResultName(transaction) !== ExecutionResult.FINISHED_WITH_RETURN) {
       await mark(reserved.reservation, "FINALIZED_ERROR", txHash);
-      throw new Error(`FINALIZED_ERROR:${transaction.txExecutionResultName ?? "UNKNOWN"}`);
+      throw new Error(`FINALIZED_ERROR:${executionError(transaction)}`);
     }
 
     let caseId = request.caseId;
@@ -708,7 +725,7 @@ export async function writeAndVerify(
         onProgress({ phase: "RECONCILIATION_REQUIRED", message: errorText(error) });
       } else if (providerRejected(error)) {
         try { await removeUnsignedJournal(reserved.reservation); } catch { /* retain the original wallet error */ }
-        onProgress({ phase: "REJECTED", message: errorText(error) });
+        onProgress({ phase: "REJECTED", message: "Signature request was rejected in the wallet." });
       } else {
         await mark(reserved.reservation, "RECONCILE");
         onProgress({ phase: "RECONCILIATION_REQUIRED", message: errorText(error) });

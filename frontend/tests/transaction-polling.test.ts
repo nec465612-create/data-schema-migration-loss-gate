@@ -112,6 +112,17 @@ afterEach(() => {
 });
 
 describe("transaction polling controls", () => {
+  it("shows a stable public message when the wallet rejects signing", async () => {
+    mocks.writeContract.mockRejectedValue(new Error("User rejected the request. Version: viem@2.56.3"));
+    await contract.connectWallet({ id: "fixture", name: "MetaMask", rdns: "io.metamask", provider: walletFixture().provider });
+    const progress = vi.fn();
+
+    await expect(contract.writeAndVerify(request(), progress)).rejects.toThrow("User rejected");
+
+    expect(progress).toHaveBeenLastCalledWith({ phase: "REJECTED", message: "Signature request was rejected in the wallet." });
+    expect(enumerateJournal()).toEqual([]);
+  });
+
   it("pauses receipt polling while the document is hidden", async () => {
     let hidden = true;
     const visibilityListeners = new Set<() => void>();

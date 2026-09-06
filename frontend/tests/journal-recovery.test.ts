@@ -77,6 +77,36 @@ describe("journal recovery reconciliation", () => {
     expect(enumerateJournal()[0].status).toBe("VERIFIED");
   });
 
+  it("accepts a successful Studio leader receipt", async () => {
+    const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
+    const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
+    const readback = JSON.stringify({ revision: "1", last_operation: { method: "lock_schemas", caller: account } });
+    mocks.getTransaction.mockResolvedValue({
+      statusName: "FINALIZED",
+      consensus_data: { leader_receipt: [{ execution_result: "SUCCESS", vote: null }] },
+    });
+    mocks.readContract.mockResolvedValue(readback);
+
+    const result = await contract.reconcileJournalRecord(record);
+
+    expect(result.record.status).toBe("VERIFIED");
+    expect(result.readback).toBe(readback);
+  });
+
+  it("reports the Studio rollback payload", async () => {
+    const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
+    const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
+    mocks.getTransaction.mockResolvedValue({
+      statusName: "FINALIZED",
+      consensus_data: { leader_receipt: [{ execution_result: "ERROR", vote: null, result: { payload: "DISTINCT_ACTORS" } }] },
+    });
+
+    const result = await contract.reconcileJournalRecord(record);
+
+    expect(result.record.status).toBe("FINALIZED_ERROR");
+    expect(result.detail).toContain("DISTINCT_ACTORS");
+  });
+
   it("retains reconciliation when finality is not available", async () => {
     const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
     const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
