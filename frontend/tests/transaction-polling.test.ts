@@ -182,4 +182,22 @@ describe("transaction polling controls", () => {
     await expect(contract.writeAndVerify(request())).resolves.toMatchObject({ caseId: "1" });
     expect(mocks.getTransaction).toHaveBeenCalledTimes(2);
   });
+
+  it("keeps polling long enough for a normal fourth-check finalization", async () => {
+    vi.stubGlobal("window", {
+      setTimeout(callback: () => void) { callback(); return 0; },
+      clearTimeout() { /* immediate test timers leave no pending handle */ },
+    });
+    mocks.getTransaction
+      .mockResolvedValueOnce({ statusName: "PENDING" })
+      .mockResolvedValueOnce({ statusName: "PENDING" })
+      .mockResolvedValueOnce({ statusName: "PENDING" })
+      .mockResolvedValueOnce({ statusName: "FINALIZED", txExecutionResultName: "FINISHED_WITH_RETURN" });
+    await configureReadback();
+    await contract.connectWallet({ id: "fixture", name: "MetaMask", rdns: "io.metamask", provider: walletFixture().provider });
+
+    await expect(contract.writeAndVerify(request())).resolves.toMatchObject({ caseId: "1" });
+    expect(mocks.getTransaction).toHaveBeenCalledTimes(4);
+    expect(enumerateJournal()).toMatchObject([{ status: "VERIFIED", tx_hash: txHash }]);
+  });
 });
