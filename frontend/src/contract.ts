@@ -54,7 +54,7 @@ function parseChain(value: string | undefined): ChainName {
 }
 
 function validAddress(value: string | undefined): `0x${string}` | null {
-  return value && addressPattern.test(value) ? (value.toLowerCase() as `0x${string}`) : null;
+  return value && addressPattern.test(value) ? (value as `0x${string}`) : null;
 }
 
 function requireAddress(): `0x${string}` {
@@ -412,7 +412,7 @@ function journalReadbackContext(record: JournalRecord): { caseId: string; revisi
 }
 
 export async function reconcileJournalRecord(record: JournalRecord): Promise<JournalReconciliation> {
-  if (record.chain !== String(chains[config.chainName].id) || record.contract !== config.contractAddress) {
+  if (record.chain !== String(chains[config.chainName].id) || record.contract.toLowerCase() !== (config.contractAddress ?? "").toLowerCase()) {
     const quarantined = await updateJournal(record.reservation, { status: "QUARANTINED" });
     return {
       record: quarantined,
