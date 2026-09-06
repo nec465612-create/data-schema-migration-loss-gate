@@ -2,9 +2,9 @@
 
 `DOCUMENT_STATUS: EXECUTED_ON_FINAL_RELEASE`
 
-`FINAL_PACKAGE: DSM-LG-FINAL-DF8C8F2`
+`FINAL_PACKAGE: DSM-LG-FINAL-0DD3175`
 
-This approved minimum-sufficient judge-perspective plan was executed on final frontend release `df8c8f2f1a96fdc14e75725adaca60458e1d2114`, Vercel deployment `dpl_4PF7a7EBgR5DijmKTCPPksHp7u6r`. Exact results are recorded in `docs/VERIFICATION.md`.
+This approved minimum-sufficient judge-perspective plan was executed on final frontend release `0dd3175a4c4ce991015307dc97c61eef43d0f175`, Vercel deployment `dpl_9kf456TWHDGPrHyLQ3h64o8Y8td7`. Exact results are recorded in `docs/VERIFICATION.md`.
 
 ## Release identity and actor boundary
 
@@ -65,8 +65,8 @@ The separate `FRONTEND RPC BUDGET MATRIX` is `docs/RPC-BUDGET.md`. Planned ceili
 - one write: at most `10` observable calls in the bounded coordinator (`1` submission, up to `7` receipt polls, up to `2` authoritative readbacks);
 - retry after uncertainty: `0` automatic calls until retained-hash reconciliation and explicit user action.
 
-The exact-release observable ledger, hashes, transaction totals, readbacks and telemetry limitation are recorded in `docs/RPC-BUDGET.md`. Any amplification, duplicate write, unbounded polling, missing teardown or unexplained client remains a release blocker.
+The exact-release request-level telemetry, hashes, transaction totals and readbacks are recorded in `docs/RPC-BUDGET.md`. Any amplification, duplicate write, unbounded polling, missing teardown or unexplained client remains a release blocker.
 
 ## Completion gate
 
-The final Case 6 run completed `READY_TO_START → RUNNING → SWEEPING → COMPLETE`: J0–J7 passed, all five writes reached automatic finality/semantic/readback success, J7 confirmed `DONE/LOSSLESS` after reload, and no duplicate write occurred. Final anonymous approval remains separate.
+The final Case 7 run completed `READY_TO_START → RUNNING → SWEEPING → COMPLETE`: J0–J7 passed, all five writes reached automatic finality/semantic/readback success, J7 confirmed `DONE/LOSSLESS` after reload, and request-level telemetry recorded 58 successful RPC requests with no retry or duplicate write. Final anonymous approval remains separate.

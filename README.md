@@ -114,7 +114,7 @@ npm --prefix frontend run build
 npm --prefix frontend run playwright
 ```
 
-Current verified results are 20 contract tests, 47 frontend tests and 3 Playwright tests passing; contract lint/typecheck and the production frontend build pass. The build emits the documented non-blocking Vite chunk-size warning. Exact Studionet transactions, source hashes, readbacks and release evidence are recorded in [docs/VERIFICATION.md](docs/VERIFICATION.md).
+Current verified results are 20 contract tests, 49 frontend tests and 4 Playwright tests passing; contract lint/typecheck and the production frontend build pass. The build emits the documented non-blocking Vite chunk-size warning. Exact Studionet transactions, source hashes, readbacks and release evidence are recorded in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 ## Deployment and source parity
 
@@ -124,7 +124,7 @@ Current verified results are 20 contract tests, 47 frontend tests and 3 Playwrig
 - Contract source SHA-256: `48E2F8D15720DAABCCA4B1D4F2DA9E336AE31A3A5D07B297201AE2B09291B53A`.
 - Contract schema SHA-256: `16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF`.
 - Judge-visible Vercel alias: `https://data-schema-migration-loss-gate.vercel.app` (corrected production deployment, HTTP 200 smoke check).
-- Final Vercel deployment: `dpl_4PF7a7EBgR5DijmKTCPPksHp7u6r`, built from release `df8c8f2f1a96fdc14e75725adaca60458e1d2114`; the exact-release Case 6 E2E reached authoritative `DONE`, `LOSSLESS`, revision `5` after five unique writes and passed reload/reconnect.
+- Final Vercel deployment: `dpl_9kf456TWHDGPrHyLQ3h64o8Y8td7`, built from release `0dd3175a4c4ce991015307dc97c61eef43d0f175`; exact-release Case 7 reached authoritative `DONE`, `LOSSLESS`, revision `5` after five unique writes and passed reload/reconnect with 58 measured RPC requests, 0 retries and 0 failures.
 
 The deployed contract is intentionally frozen. Recovery relies on preserved source/schema parity, nonce-based create reconciliation, exact revision history and deployment of a separately reviewed successor if a future change is required.
 
@@ -143,4 +143,4 @@ The deployed contract is intentionally frozen. Recovery relies on preserved sour
 - The result covers only the declared record schema and mapping; it does not execute a migration or inspect real datasets.
 - Semantic equivalence can remain `UNRESOLVED`; retries are cooldown- and count-bounded.
 - The live Studio matrix did not synthetically force an `UNRESOLVED` case; that boundary is covered by automated tests.
-- Request-level physical RPC telemetry was not exposed by the browser control surface during the live run; the source-bound matrix and bounded ceilings remain documented without inventing counts.
+- The immutable Vercel deployment URL is SSO-protected; judges use the stable public alias linked above. Request-level RPC evidence is exposed in the Recovery Journal panel.

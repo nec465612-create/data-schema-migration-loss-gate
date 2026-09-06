@@ -27,16 +27,22 @@ MULTI_CLIENT_JUSTIFICATION: NOT_REQUIRED
 
 ## FRONTEND RPC BUDGET EVIDENCE
 
-FRONTEND_EVIDENCE_STATUS: COMPLETE_OBSERVABLE_ACTION_LEDGER
+FRONTEND_EVIDENCE_STATUS: COMPLETE_REQUEST_LEVEL_TELEMETRY
 
-Chrome control exposed visible lifecycle/action state but not a physical request-event stream. Accordingly, the final evidence records exact explicit actions, transaction hashes/counts, bounded source behavior and authoritative readbacks; it makes no invented physical-network count or exact receipt-poll count.
+The exact production release instruments JSON-RPC at both physical request boundaries: SDK HTTP transport and the explicitly selected EIP-1193 provider. Case 7 began after the public Clear control showed `0` requests and ended with the public Refresh control showing `58` requests. All `58` succeeded; all HTTP responses were `200`; retry count was `0`; transaction submissions were exactly `5`.
 
 | Screen/workflow | Request source/method | Observed actions | Cache/dedupe | Poll evidence | Retry | Authoritative readback | Actual transactions | Result |
 |---|---|---:|---|---|---|---|---:|---|
-| Clean landing | none | 0 chain/write actions | n/a | none | none | none | 0 | PASS; disconnected landing |
-| Wallet connect/account switch | EIP-6963 + account/chain session | 1 explicit connect; 2 account transitions | one canonical session | none | none | visible account/chain binding | 0 | PASS |
-| J2–J6 Case 6 writes | one coordinator per method | 5 explicit writes | one retained journal intent per write; no duplicate | bounded `2/4/8/12/16/20/24s`; visible finality wait; physical attempt count unavailable | 0 resubmits | exact revision `1` through `5`; final `DONE/LOSSLESS` | 5 | PASS |
-| J7 reload/list/detail | `get_count`, `get_case(6)` | 2 explicit reads after reconnect | no stale authenticated restore | none | none | `DONE`, `LOSSLESS`, revision `5` | 0 | PASS |
+| Clean landing | public telemetry control | 0 RPC | n/a | none | 0 | none | 0 | PASS; disconnected landing |
+| Wallet connect + reconnect + account switch | provider `eth_requestAccounts` ×2, `eth_chainId` ×3 | 5 RPC | one canonical selected-provider session; no cache | none | 0 | visible account/chain binding | 0 | PASS |
+| J2 create Case 7 | HTTP nonce/estimate/gas ×1 each; provider send ×1; HTTP transaction lookup ×5; `gen_call` ×2 | 11 RPC | one retained intent; no duplicate or cache | polls at bounded 2/4/8/12/16s; 5 attempts | 0 | `BASE_DRAFT`, revision 1 | 1 | PASS |
+| J3 lock | HTTP nonce/estimate/gas ×1 each; provider send ×1; HTTP transaction lookup ×5; `gen_call` ×1 | 10 RPC | one retained intent; no duplicate or cache | 5 bounded attempts | 0 | `BASE_LOCKED`, revision 2 | 1 | PASS |
+| J4 put mapping | same method profile as lock | 10 RPC | one retained intent; no duplicate or cache | 5 bounded attempts | 0 | `RESPONSE_DRAFT`, revision 3 | 1 | PASS |
+| J5 freeze | same method profile as lock | 10 RPC | one retained intent; no duplicate or cache | 5 bounded attempts | 0 | `FROZEN`, revision 4 | 1 | PASS |
+| J6 evaluate | same method profile as lock | 10 RPC | one retained intent; no duplicate or cache | 5 bounded attempts | 0 | `DONE`, `LOSSLESS`, revision 5 | 1 | PASS |
+| J7 reload/list/detail | HTTP `gen_call` ×2 | 2 RPC | no stale authenticated restore; explicit reads | none | 0 | Case 7 `DONE`, `LOSSLESS`, revision 5 | 0 | PASS |
+
+Measured total: `58` requests = `5` wallet/session requests + `51` write-journey requests + `2` J7 reads. Cache hits/misses and in-flight deduplication are `N/A` for these consequential zero-TTL calls; no duplicate identical in-flight read occurred. Each write invalidated the prior authoritative view and ended in a fresh `gen_call` readback. There were `0` 429s, transient retries, resubmits or failed requests.
 
 ## Frontend budget
 
@@ -114,4 +120,4 @@ Disposition: retain the account/probe as read-only setup evidence, make no retro
 
 ## Acceptance boundary
 
-The exact final revision, completed Studio evidence, final Vercel deployment, this measured observable ledger and `docs/VERIFICATION.md` now enter the retained anonymous `POST_GITHUB_VERCEL_FINAL` checkpoint. Physical request counts remain explicitly unavailable rather than inferred.
+The exact final revision, completed Studio evidence, final Vercel deployment, measured request-level ledger and `docs/VERIFICATION.md` now enter the retained anonymous `POST_GITHUB_VERCEL_FINAL` checkpoint.
