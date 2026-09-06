@@ -396,6 +396,12 @@ export async function readView(functionName: string, args: unknown[] = []): Prom
   return typeof result === "string" ? result : JSON.stringify(result, jsonReplacer);
 }
 
+export function caseIdsFromCount(value: unknown): string[] {
+  const count = Number(decimal(value));
+  if (!Number.isSafeInteger(count) || count < 0 || count > 32) throw new Error("BAD_CASE_COUNT");
+  return Array.from({ length: count }, (_, index) => String(index + 1));
+}
+
 export type JournalReconciliation = {
   record: JournalRecord;
   readback: string | null;

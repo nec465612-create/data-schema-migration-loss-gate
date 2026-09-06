@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 
 import {
   canonicalJson,
+  caseIdsFromCount,
   config,
   closeWalletChooser,
   currentChainName,
@@ -292,9 +293,9 @@ function App() {
   async function loadCases() {
     resetNotice();
     try {
-      const page = JSON.parse(await readView("list_cases", [1n, 4n])) as { ids: string[] };
-      setCaseIds(page.ids);
-      setMessage(`Loaded ${page.ids.length} case ID(s). Select one for the explicit detail read.`);
+      const ids = caseIdsFromCount(await readView("get_count"));
+      setCaseIds(ids);
+      setMessage(`Loaded ${ids.length} case ID(s). Select one for the explicit detail read.`);
     } catch (caught) { setError(String(caught)); }
   }
 

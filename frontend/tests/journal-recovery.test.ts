@@ -58,6 +58,11 @@ beforeEach(() => {
 });
 
 describe("journal recovery reconciliation", () => {
+  it("enumerates every contiguous case ID from the bounded contract count", () => {
+    expect(contract.caseIdsFromCount("5")).toEqual(["1", "2", "3", "4", "5"]);
+    expect(() => contract.caseIdsFromCount("33")).toThrow("BAD_CASE_COUNT");
+  });
+
   it("decodes nested case JSON returned by the contract", () => {
     expect(contract.parseCaseRecord(JSON.stringify({
       phase: "BASE_DRAFT",
