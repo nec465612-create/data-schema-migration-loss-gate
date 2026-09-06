@@ -13,6 +13,7 @@ import {
   parseCaseRecord,
   reconcileJournalRecord,
   readView,
+  recoverSubmittedWrite,
   subscribeWalletSession,
   selectWallet,
   switchToConfiguredNetwork,
@@ -193,7 +194,7 @@ function App() {
   const [mappingRows, setMappingRows] = useState<MappingRow[]>(() => initialMappingRows(["name"], ["name"]));
   const [defaults, setDefaults] = useState<DefaultRow[]>([]);
   const [nonce, setNonce] = useState(cryptoRandomNonce());
-  const [mapper, setMapper] = useState("0x34b92E6553eaCA11A00A9d86d75d8a7881779D78");
+  const [mapper, setMapper] = useState("");
   const [caseId, setCaseId] = useState("");
   const [caseRecord, setCaseRecord] = useState<Record<string, any> | null>(null);
   const [caseIds, setCaseIds] = useState<string[]>([]);
@@ -205,6 +206,7 @@ function App() {
   const [journalReadbacks, setJournalReadbacks] = useState<Record<string, string>>({});
   const [journalExported, setJournalExported] = useState<Record<string, boolean>>({});
   const [knownHashes, setKnownHashes] = useState<Record<string, string>>({});
+  const [recoveryHash, setRecoveryHash] = useState("");
   const [progress, setProgress] = useState<WriteProgress>({ phase: "IDLE" });
   const writeAbortRef = useRef<AbortController | null>(null);
   const walletTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -365,6 +367,20 @@ function App() {
       setJournalReady(false);
       setError(String(caught));
     }
+  }
+
+  async function recoverPutMapping() {
+    resetNotice();
+    if (!account || !caseRecord || !caseId) { setError("RECOVERY_CASE_REQUIRED"); return; }
+    try {
+      const result = await recoverSubmittedWrite(putRequest(), account, recoveryHash.trim());
+      setJournal((current) => [...current, result.record]);
+      setJournalReadbacks((current) => ({ ...current, [result.record.reservation]: result.encoded }));
+      setCaseRecord(parseCaseRecord(result.encoded));
+      setRecoveryHash("");
+      setProgress({ phase: "SUCCESS", hash: result.record.tx_hash });
+      setMessage("Recovered submitted put_mapping hash and verified the exact historical readback; no transaction was resubmitted.");
+    } catch (caught) { setError(String(caught)); }
   }
 
   function exportJournal(record: JournalRecord) {
@@ -661,6 +677,17 @@ function App() {
               ))}
             </div>
           )}
+          <div className="toolbar journal-recovery-form">
+            <input
+              aria-label="Known submitted put_mapping hash"
+              value={recoveryHash}
+              onChange={(event) => setRecoveryHash(event.target.value)}
+              placeholder="Recover a submitted put_mapping hash"
+            />
+            <button type="button" className="quiet-button" onClick={() => void recoverPutMapping()} disabled={!account || !caseRecord || !caseId || !recoveryHash.trim()}>
+              Recover and verify hash
+            </button>
+          </div>
         </section>
 
         <section className="panel" id="create-case" aria-labelledby="create-heading">

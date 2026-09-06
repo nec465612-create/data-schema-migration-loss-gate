@@ -5,6 +5,7 @@ import { ExecutionResult, TransactionStatus } from "genlayer-js/types";
 import {
   JournalRecord,
   removeUnsignedJournal,
+  recoverJournalRecord,
   reserveJournal,
   sha256Utf8,
   updateJournal,
@@ -480,6 +481,62 @@ export type WriteRequest = {
   verify: (record: Record<string, any>) => boolean;
 };
 
+export async function recoverSubmittedWrite(
+  request: WriteRequest,
+  account: string,
+  txHash: string,
+): Promise<{ record: JournalRecord; caseId: string; encoded: string }> {
+  const contract = requireAddress();
+  const normalizedAccount = validAccount(account);
+  if (!normalizedAccount) throw new Error("RECOVERY_ACCOUNT_INVALID");
+  if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) throw new Error("BAD_TRANSACTION_HASH");
+  const argsJson = JSON.stringify(request.args, jsonReplacer);
+  const argsHash = await sha256Utf8(canonicalJson(request.argsForHash));
+  const recovered = await recoverJournalRecord({
+    chain: String(chains[config.chainName].id),
+    contract,
+    account: normalizedAccount,
+    method: request.method,
+    intent: request.intent,
+    args_json: argsJson,
+    pre_revision: request.preRevision,
+    pre_hash: await sha256Utf8(request.preHash),
+    tx_hash: txHash.toLowerCase(),
+    status: "RECONCILE",
+  });
+  try {
+    const transaction = await readClient.getTransaction({ hash: recovered.tx_hash });
+    if (!isFinalized(transaction)) throw new Error("RECOVERY_RECEIPT_NOT_FINAL");
+    if (executionResultName(transaction) !== ExecutionResult.FINISHED_WITH_RETURN) {
+      throw new Error(`FINALIZED_ERROR:${executionError(transaction)}`);
+    }
+    const transactionCaller = String(transaction?.from_address ?? transaction?.origin_address ?? "").toLowerCase();
+    if (transactionCaller && transactionCaller !== normalizedAccount) throw new Error("RECOVERY_CALLER_MISMATCH");
+    let caseId = request.caseId;
+    if (!caseId) {
+      if (!request.creator || !request.nonce) throw new Error("CREATE_RESOLUTION_INPUT_MISSING");
+      caseId = decimal(await readView("get_id_by_nonce", [request.creator, request.nonce]));
+      if (caseId === "0") throw new Error("RECONCILE_CREATE_ID_MISSING");
+    }
+    const revision = (BigInt(request.preRevision) + 1n).toString();
+    const encoded = await readView("get_version", [BigInt(caseId), BigInt(revision)]);
+    if (encoded === "null") throw new Error("RECOVERY_READBACK_MISSING");
+    const parsed = parseCaseRecord(encoded);
+    const operation = parsed.last_operation as Record<string, unknown> | undefined;
+    if (
+      parsed.revision !== revision ||
+      operation?.method !== request.method ||
+      String(operation?.caller ?? "").toLowerCase() !== normalizedAccount ||
+      operation?.args_hash !== argsHash ||
+      !request.verify(parsed)
+    ) throw new Error("RECOVERY_HISTORICAL_READBACK_MISMATCH");
+    const verified = await updateJournal(recovered.reservation, { status: "VERIFIED" });
+    return { record: verified, caseId, encoded };
+  } catch (error) {
+    throw new Error(errorText(error));
+  }
+}
+
 function isFinalized(transaction: any): boolean {
   return transaction?.statusName === TransactionStatus.FINALIZED || transaction?.status === TransactionStatus.FINALIZED;
 }
@@ -581,11 +638,7 @@ function boundedBackoff(milliseconds: number): number {
 }
 
 async function mark(reservation: string, status: JournalRecord["status"], txHash?: string): Promise<void> {
-  try {
-    await updateJournal(reservation, { status, ...(txHash === undefined ? {} : { tx_hash: txHash }) });
-  } catch {
-    // Preserve the original transaction error; the journal remains exportable if storage is available.
-  }
+  await updateJournal(reservation, { status, ...(txHash === undefined ? {} : { tx_hash: txHash }) });
 }
 
 export async function writeAndVerify(

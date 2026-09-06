@@ -7,6 +7,7 @@ import {
   archiveJournalRecord,
   attachKnownTransactionHash,
   rebuildJournalIndex,
+  recoverJournalRecord,
   reserveJournal,
   sha256Utf8,
   serializeJournalRecord,
@@ -65,6 +66,14 @@ describe("crash-recoverable journal", () => {
 
     expect(recovered).toMatchObject({ status: "RECONCILE", tx_hash: hash });
     await expect(attachKnownTransactionHash(record.reservation, `0x${"d".repeat(64)}`)).rejects.toThrow("HASH_ATTACHMENT_NOT_ALLOWED");
+  });
+
+  it("recovers a submitted record only with a hash and refuses duplicate hashes", async () => {
+    const hash = `0x${"e".repeat(64)}`;
+    const recovered = await recoverJournalRecord({ ...baseInput, tx_hash: hash, status: "RECONCILE" });
+    expect(recovered).toMatchObject({ tx_hash: hash, status: "RECONCILE" });
+    await expect(recoverJournalRecord({ ...baseInput, tx_hash: hash, status: "RECONCILE" })).rejects.toThrow("TRANSACTION_ALREADY_RETAINED");
+    await expect(recoverJournalRecord({ ...baseInput, tx_hash: "", status: "RECONCILE" })).rejects.toThrow("RECOVERY_REQUIRES_SUBMITTED_HASH");
   });
 
   it("uses a random reservation key and blocks the same pending intent", async () => {

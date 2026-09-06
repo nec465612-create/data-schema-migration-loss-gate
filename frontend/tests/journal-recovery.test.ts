@@ -86,6 +86,29 @@ describe("journal recovery reconciliation", () => {
     expect(enumerateJournal()[0].status).toBe("VERIFIED");
   });
 
+  it("recovers a missing submitted record only after args-hash and readback verification", async () => {
+    const request = {
+      method: "put_mapping",
+      args: [4n, JSON.stringify({ mapping: [{ old_id: "name", new_id: "name", transform: "IDENTITY" }], defaults: [] }), 2n],
+      argsForHash: ["4", { mapping: [{ old_id: "name", new_id: "name", transform: "IDENTITY" }], defaults: [] }, "2"],
+      intent: "put_mapping:4:2",
+      preRevision: "2",
+      preHash: "base-state",
+      caseId: "4",
+      verify: (record: Record<string, any>) => record.phase === "RESPONSE_DRAFT" && record.response?.mapping,
+    };
+    const argsHash = await sha256Utf8(contract.canonicalJson(["4", { mapping: [{ old_id: "name", new_id: "name", transform: "IDENTITY" }], defaults: [] }, "2"]));
+    const readback = JSON.stringify({ revision: "3", phase: "RESPONSE_DRAFT", response: { mapping: [{ old_id: "name", new_id: "name", transform: "IDENTITY" }] }, last_operation: { method: "put_mapping", caller: account, args_hash: argsHash } });
+    mocks.getTransaction.mockResolvedValue({ statusName: "FINALIZED", txExecutionResultName: "FINISHED_WITH_RETURN", from_address: account });
+    mocks.readContract.mockResolvedValue(readback);
+
+    const result = await contract.recoverSubmittedWrite(request, account, `0x${"f".repeat(64)}`);
+
+    expect(result.record).toMatchObject({ status: "VERIFIED", tx_hash: `0x${"f".repeat(64)}` });
+    expect(result.caseId).toBe("4");
+    expect(result.encoded).toBe(readback);
+  });
+
   it("accepts a successful Studio leader receipt", async () => {
     const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
     const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
@@ -152,7 +175,7 @@ describe("journal recovery reconciliation", () => {
 
   it("quarantines a mixed-journal record from another contract without querying it", async () => {
     const currentFingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
-    const foreignInput = { ...baseInput, contract: "0x8888888888888888888888888888888888888888" };
+    const foreignInput = { ...baseInput, contract: "0x8888888888888888888888888888888888888888", tx_hash: `0x${"c".repeat(64)}` };
     const foreignFingerprint = await sha256Utf8(JSON.stringify([foreignInput.chain, foreignInput.contract, foreignInput.account, foreignInput.method, foreignInput.intent]));
     const current = await reserveJournal({ ...baseInput, operationFingerprint: currentFingerprint });
     const foreign = await reserveJournal({ ...foreignInput, operationFingerprint: foreignFingerprint });

@@ -32,6 +32,8 @@ type JournalReservation = Omit<JournalRecord, "v" | "reservation" | "created_ms"
   operationFingerprint: string;
 };
 
+export type JournalRecoveryInput = Omit<JournalRecord, "v" | "reservation" | "created_ms">;
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -175,6 +177,9 @@ export async function reserveJournal(input: JournalReservation): Promise<Journal
         ])),
       ),
     );
+    if (input.tx_hash && records.some((record) => record.tx_hash.toLowerCase() === input.tx_hash.toLowerCase())) {
+      throw new Error("TRANSACTION_ALREADY_RETAINED");
+    }
     const inputCaseId = input.intent.startsWith("create:") ? null : input.intent.split(":")[1] ?? null;
     const hasSameCase = inputCaseId !== null && active.some((record) => {
       if (record.chain !== input.chain || record.contract !== input.contract) return false;
@@ -196,6 +201,18 @@ export async function reserveJournal(input: JournalReservation): Promise<Journal
     writeIndex(store, [...records, record]);
     return record;
   });
+}
+
+export async function recoverJournalRecord(input: JournalRecoveryInput): Promise<JournalRecord> {
+  if (input.status !== "RECONCILE" || !input.tx_hash) throw new Error("RECOVERY_REQUIRES_SUBMITTED_HASH");
+  const operationFingerprint = await sha256Utf8(JSON.stringify([
+    input.chain,
+    input.contract,
+    input.account,
+    input.method,
+    input.intent,
+  ]));
+  return reserveJournal({ ...input, operationFingerprint });
 }
 
 export async function updateJournal(
