@@ -67,7 +67,7 @@ export function validateJournalRecord(value: unknown): JournalRecord {
   const reservation = value.reservation as string;
   const status = value.status as string;
   if (!RESERVATION_RE.test(reservation)) throw new Error("CORRUPT_JOURNAL");
-  if (!/^0x[0-9a-f]{40}$/.test(value.contract as string) || !/^0x[0-9a-f]{40}$/.test(value.account as string)) {
+  if (!/^0x[0-9a-fA-F]{40}$/.test(value.contract as string) || !/^0x[0-9a-fA-F]{40}$/.test(value.account as string)) {
     throw new Error("CORRUPT_JOURNAL");
   }
   if (!/^(0|[1-9][0-9]*)$/.test(value.chain as string) || !/^(0|[1-9][0-9]*)$/.test(value.pre_revision as string) || !/^(0|[1-9][0-9]*)$/.test(value.created_ms as string)) {
@@ -82,7 +82,7 @@ export function validateJournalRecord(value: unknown): JournalRecord {
   if (!["SIGNING", "SUBMITTED", "RECONCILE", "VERIFIED", "FINALIZED_ERROR", "QUARANTINED"].includes(status)) {
     throw new Error("CORRUPT_JOURNAL");
   }
-  return value as JournalRecord;
+  return { ...value, contract: (value.contract as string).toLowerCase(), account: (value.account as string).toLowerCase() } as JournalRecord;
 }
 
 function storage(): Storage {
@@ -186,12 +186,12 @@ export async function reserveJournal(input: JournalReservation): Promise<Journal
     if (records.length >= 32) throw new Error("JOURNAL_CAPACITY");
     const now = Date.now();
     const { operationFingerprint: _operationFingerprint, ...recordInput } = input;
-    const record: JournalRecord = {
+    const record = validateJournalRecord({
       ...recordInput,
       v: 1,
       reservation: randomReservation(),
       created_ms: String(now),
-    };
+    });
     store.setItem(journalKey(record.reservation), JSON.stringify(record));
     writeIndex(store, [...records, record]);
     return record;

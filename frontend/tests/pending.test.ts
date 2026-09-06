@@ -45,6 +45,16 @@ const baseInput = {
 describe("crash-recoverable journal", () => {
   beforeEach(() => store.clear());
 
+  it("accepts checksum addresses and normalizes journal identity", async () => {
+    const input = { ...baseInput, contract: "0x11111111111111111111111111111111111111AA" };
+    const fingerprint = await sha256Utf8(JSON.stringify([input.chain, input.contract, input.account, input.method, input.intent]));
+
+    const record = await reserveJournal({ ...input, operationFingerprint: fingerprint });
+
+    expect(record.contract).toBe("0x11111111111111111111111111111111111111aa");
+    expect(enumerateJournal()[0].contract).toBe("0x11111111111111111111111111111111111111aa");
+  });
+
   it("uses a random reservation key and blocks the same pending intent", async () => {
     const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
     const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
