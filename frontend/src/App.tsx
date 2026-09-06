@@ -21,6 +21,7 @@ import {
   WriteRequest,
   writeAndVerify,
 } from "./contract";
+import { withRpcScope } from "./rpc-telemetry";
 import { archiveJournalRecord, attachKnownTransactionHash, JournalRecord, rebuildJournalIndex, serializeJournalRecord } from "./pending";
 import { isPendingPhase, PROGRESS_COPY, WriteProgress } from "./progress";
 import {
@@ -293,7 +294,7 @@ function App() {
   async function loadCases() {
     resetNotice();
     try {
-      const ids = caseIdsFromCount(await readView("get_count"));
+      const ids = caseIdsFromCount(await withRpcScope("load-case-ids", () => readView("get_count")));
       setCaseIds(ids);
       setMessage(`Loaded ${ids.length} case ID(s). Select one for the explicit detail read.`);
     } catch (caught) { setError(String(caught)); }
@@ -302,7 +303,7 @@ function App() {
   async function openCase(id: string) {
     resetNotice();
     try {
-      const encoded = await readView("get_case", [BigInt(id)]);
+      const encoded = await withRpcScope("open-case-detail", () => readView("get_case", [BigInt(id)]));
       if (encoded === "null") throw new Error("CASE_NOT_FOUND");
       const record = parseCaseRecord(encoded);
       setCaseId(id);

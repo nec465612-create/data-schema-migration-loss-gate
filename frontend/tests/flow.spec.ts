@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("landing screen is readable without an automatic chain request", async ({ page }) => {
   const rpcRequests: string[] = [];
   page.on("request", (request) => {
-    if (request.url().includes("/api") || request.url().includes("rpc")) rpcRequests.push(request.url());
+    if (["fetch", "xhr"].includes(request.resourceType()) && (request.url().includes("/api") || request.url().includes("rpc"))) rpcRequests.push(request.url());
   });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Schema migration loss gate" })).toBeVisible();

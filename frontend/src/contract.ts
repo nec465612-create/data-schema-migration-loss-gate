@@ -13,6 +13,7 @@ import {
 import { WriteProgress } from "./progress";
 import { chainMatches } from "./network";
 import { sameWriteContext, WriteContext } from "./write-context";
+import { beginRpcScope, endRpcScope, installRpcFetchTelemetry, instrumentProvider, withRpcScope } from "./rpc-telemetry";
 
 export type ChainName = "localnet" | "studionet" | "testnetAsimov" | "testnetBradbury";
 export type Eip1193Provider = {
@@ -96,6 +97,7 @@ export function decimal(value: unknown): string {
   return result;
 }
 
+installRpcFetchTelemetry();
 const readClient: any = createClient({ chain: chains[config.chainName] });
 let writeClient: any = null;
 let sessionClient: any = null;
@@ -188,7 +190,7 @@ function installSessionListeners(provider: Eip1193Provider): void {
       return;
     }
     try {
-      const chainId = String(await provider.request({ method: "eth_chainId" })).toLowerCase();
+      const chainId = String(await withRpcScope("wallet-account-switch", () => provider.request({ method: "eth_chainId" }))).toLowerCase();
       if (installedGeneration !== sessionGeneration || !walletSession) return;
       sessionClient = bindSessionClient(account);
       commitWalletSession({ ...walletSession, account, chainId });
@@ -356,17 +358,20 @@ export async function selectWallet(walletId: string): Promise<WalletSession> {
 }
 
 export async function connectWallet(wallet: WalletOption): Promise<WalletSession> {
-  const accounts = await wallet.provider.request({ method: "eth_requestAccounts" });
-  const account = Array.isArray(accounts) ? validAccount(accounts[0]) : null;
-  if (!account) {
-    throw new Error("WALLET_ACCOUNT_UNAVAILABLE");
-  }
-  const chainId = String(await wallet.provider.request({ method: "eth_chainId" })).toLowerCase();
-  selectedProvider = wallet.provider;
-  sessionClient = bindSessionClient(account);
-  commitWalletSession({ account, chainId, expectedChainId: expectedChainId(), wallet: { id: wallet.id, name: wallet.name, rdns: wallet.rdns, icon: wallet.icon } });
-  installSessionListeners(wallet.provider);
-  return walletSession as WalletSession;
+  return withRpcScope("wallet-connect", async () => {
+    const provider = instrumentProvider(wallet.provider);
+    const accounts = await provider.request({ method: "eth_requestAccounts" });
+    const account = Array.isArray(accounts) ? validAccount(accounts[0]) : null;
+    if (!account) {
+      throw new Error("WALLET_ACCOUNT_UNAVAILABLE");
+    }
+    const chainId = String(await provider.request({ method: "eth_chainId" })).toLowerCase();
+    selectedProvider = provider;
+    sessionClient = bindSessionClient(account);
+    commitWalletSession({ account, chainId, expectedChainId: expectedChainId(), wallet: { id: wallet.id, name: wallet.name, rdns: wallet.rdns, icon: wallet.icon } });
+    installSessionListeners(provider);
+    return walletSession as WalletSession;
+  });
 }
 
 export async function switchToConfiguredNetwork(): Promise<string> {
@@ -786,6 +791,7 @@ export async function writeAndVerify(
     tx_hash: "",
     status: "SIGNING",
   });
+  const previousRpcScope = beginRpcScope(request.intent);
   let txHash = "";
   let reservationRemoved = false;
   const reconcileIfContextChanged = async () => {
@@ -898,5 +904,7 @@ export async function writeAndVerify(
       onProgress({ phase: "RECONCILIATION_REQUIRED", hash: txHash, message: errorText(error) });
     }
     throw new Error(errorText(error));
+  } finally {
+    endRpcScope(previousRpcScope);
   }
 }

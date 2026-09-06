@@ -57,7 +57,7 @@ No Case 6 write required manual reconciliation, reload, replacement transaction 
 ## GitHub Presentation Gate
 
 - Repository: `https://github.com/nec465612-create/data-schema-migration-loss-gate`.
-- Verified public, not private; default branch `main`; API head `2093be2e59d2441b91712b5179af67ef9539c083` at the post-push check.
+- Verified public, not private; default branch `main`; API head `ff4bf7c7c4f509758014f5d82495c9ce48c2c766` at the post-push check.
 - Repository page, raw README and final Vercel alias each returned HTTP `200`.
 - Public tree contains source, schema, frontend, tests and reviewer-facing documentation; ignored local preflight state is not published.
 - README presents purpose, GenLayer mechanism, actor flow, transaction lifecycle, run/test instructions, deployment identity, trust boundaries and limitations.
