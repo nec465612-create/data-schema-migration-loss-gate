@@ -43,6 +43,42 @@ The primary AI controlled Chrome continuously on the final alias. OKX creator `0
 
 No Case 6 write required manual reconciliation, reload, replacement transaction or duplicate click. The earlier Case 5 run exposed a too-short receipt window; commits `88a2523` and `df8c8f2` added bounded finality coverage and a seventh-check regression before the fresh Case 6 rerun.
 
+## Reusable live proof matrix
+
+| Requirement / actor | UI action → contract method | Final transaction | Terminal and authoritative readback | Source / regression evidence |
+|---|---|---|---|---|
+| Schema Owner creates a distinct-actor case | Create Case → `create_schema_case` | `0x4335dbf0fb1655c7b923f209d3a1fbf8558ca4825a47637c9bfa95a29cf55d12` | `SUCCESS`; Case 6 `BASE_DRAFT`, revision `1`; creator and mapper exact | `contracts/main.py`; `frontend/src/App.tsx`; contract/frontend tests |
+| Schema Owner seals schemas | Lock schemas → `lock_schemas` | `0xea20be2b0b4b0a9aab16f639ddf50da4dc2e8150f852618ea70d6aefe51efa45` | `SUCCESS`; `BASE_LOCKED`, revision `2` | contract phase/actor tests; frontend write/readback coordinator |
+| Mapper supplies identity transform | Put mapping → `put_mapping` | `0xdf6fc3d77f3a635312f5ded79c59d5f307b236a0a3359259f4ed30401feb2ac9` | `SUCCESS`; exact `name → name`, `IDENTITY`; `RESPONSE_DRAFT`, revision `3` | mapping validation tests; Case 6 browser readback |
+| Mapper seals response | Freeze mapping → `freeze_mapping` | `0xab2012927684e35dbad7b6e7e56a11fb65615dcd61f6e05bc0b35aa4e23d7138` | `SUCCESS`; `FROZEN`, revision `4` | phase/authorization tests; Case 6 browser readback |
+| Evaluator invokes consensus | Evaluate → `evaluate_migration` | `0x69fc3ad3a2b1d73ae9518773d18f0aef878bfe87d60f5191035785e41b7ef7f0` | `SUCCESS`; consensus accepted; `DONE`, `LOSSLESS`, revision `5`, result `SAME`, attempts `1` | deterministic consequence/consensus tests; final reload/readback |
+| Unauthorized/stale negative controls | Studio calls → guarded writes | `0xa601e2bb76409aab6d3c8f9791a34c3a6bb81b9f7751da5811b3bf0e3d538c93`, `0x95c752e5f021a5b223c7ac9feb54a7cc0ebcb45d074be851e92f917a6210c9ac` | finalized rollback `NOT_AUTHORIZED` / `STALE_REVISION`; state unchanged | contract negative tests and retained Studio readbacks |
+
+## GitHub Presentation Gate
+
+- Repository: `https://github.com/nec465612-create/data-schema-migration-loss-gate`.
+- Verified public, not private; default branch `main`; API head `2093be2e59d2441b91712b5179af67ef9539c083` at the post-push check.
+- Repository page, raw README and final Vercel alias each returned HTTP `200`.
+- Public tree contains source, schema, frontend, tests and reviewer-facing documentation; ignored local preflight state is not published.
+- README presents purpose, GenLayer mechanism, actor flow, transaction lifecycle, run/test instructions, deployment identity, trust boundaries and limitations.
+
+`GITHUB_PRESENTATION_GATE: PASS`
+
+## GENLAYER SUBMISSION CATEGORY AND SCORECARD
+
+Category: `PROJECT`
+
+Validity gate: `PASS`
+
+- GenLayer fit: `4/5`. Evidence: the on-chain outcome is produced through GenLayer leader/validator consensus and drives a durable `LOSSLESS`/`LOSS_FOUND` migration verdict; exact contract and Case 6 live evaluation inspected. Weakness/blocker: the bounded schema vocabulary intentionally limits the breadth of semantic cases.
+- Contract quality: `4/5`. Evidence: strict actors, expected revisions, immutable version history, nonce idempotency, exact mapping/default validation, deterministic consequence checks, consensus result validation and bounded retry are covered by 20 contract tests plus live positive and negative paths. Weakness/blocker: live `UNRESOLVED` was not naturally triggered and is supported by deterministic tests rather than a fabricated transaction.
+- Engineering: `4/5`. Evidence: public incremental Git history, reproducible lint/typecheck/tests/build, 10 files/47 frontend tests, 3 Playwright tests, source/schema hashes, retained transaction journal and exact deployment/evidence binding. Weakness/blocker: Vite reports a non-blocking large-chunk warning.
+- Frontend / UX: `4/5`. Evidence: final public Vercel app supports explicit wallet choice, distinct actor switching, validation, five-write lifecycle, hash retention/copy, finality/execution/readback gating, recovery journal and successful J0–J7 judge journey. Weakness/blocker: request-level Chrome telemetry was unavailable, so the RPC evidence uses the disclosed observable-action ledger instead of invented physical counts.
+
+Overall evidence-based assessment: strong, complete GenLayer Project with a real consensus-critical contract, public reproducible implementation and exact-release live journey; remaining weaknesses are disclosed and do not falsify the demonstrated path.
+
+Submission recommendation: `NOT READY` pending mandatory anonymous `POST_GITHUB_VERCEL_FINAL` approval; technical and live evidence is ready for that review.
+
 ## Live Studio proof matrix
 
 Every consequential write below was checked as `FINALIZED`, semantic GenVM `SUCCESS` or the explicitly retained finalized error, consensus `Accepted` where successful, and authoritative historical readback. Failed attempts are retained diagnostic evidence and were not counted as successful journeys.
