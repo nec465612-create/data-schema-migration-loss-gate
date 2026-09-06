@@ -2,7 +2,7 @@
 
 `DOCUMENT_STATUS: FINAL_RELEASE_MEASURED_REQUEST_TELEMETRY`
 
-This matrix is bound to the C3 Stage 2 frontend flow. The frontend section remains a plan until the exact final Vercel deployment is measured. Studio live evidence is recorded separately in `docs/VERIFICATION.md` and the local secret-free action ledger.
+This matrix is bound to the C3 Stage 2 frontend flow. The frontend section contains measured request-level evidence from exact final deployment `dpl_9kf456TWHDGPrHyLQ3h64o8Y8td7`. Studio live evidence is recorded separately in `docs/VERIFICATION.md` and the local secret-free action ledger.
 
 ## Applicability
 
@@ -36,7 +36,9 @@ The exact production release instruments JSON-RPC at both physical request bound
 | Screen/workflow | Request source/method | Observed actions | Cache/dedupe | Poll evidence | Retry | Authoritative readback | Actual transactions | Result |
 |---|---|---:|---|---|---|---|---:|---|
 | Clean landing | public telemetry control | 0 RPC | n/a | none | 0 | none | 0 | PASS; disconnected landing |
-| Wallet connect + reconnect + account switch | provider `eth_requestAccounts` ×2, `eth_chainId` ×3 | 5 RPC | one canonical selected-provider session; no cache | none | 0 | visible account/chain binding | 0 | PASS |
+| Initial wallet connect | provider `eth_requestAccounts` ×1, `eth_chainId` ×1 | 2 RPC | one canonical selected-provider session; no cache | none | 0 | visible account/chain binding | 0 | PASS |
+| Account switch | provider `eth_chainId` ×1 | 1 RPC | selected-provider account-state invalidation; no cache | none | 0 | updated account/chain binding | 0 | PASS |
+| J7 reconnect after reload | provider `eth_requestAccounts` ×1, `eth_chainId` ×1 | 2 RPC | explicit reconnect; no stale session restore | none | 0 | restored account/chain binding | 0 | PASS |
 | J2 create Case 7 | HTTP nonce/estimate/gas ×1 each; provider send ×1; HTTP transaction lookup ×5; `gen_call` ×2 | 11 RPC | one retained intent; no duplicate or cache | polls at bounded 2/4/8/12/16s; 5 attempts | 0 | `BASE_DRAFT`, revision 1 | 1 | PASS |
 | J3 lock | HTTP nonce/estimate/gas ×1 each; provider send ×1; HTTP transaction lookup ×5; `gen_call` ×1 | 10 RPC | one retained intent; no duplicate or cache | 5 bounded attempts | 0 | `BASE_LOCKED`, revision 2 | 1 | PASS |
 | J4 put mapping | same method profile as lock | 10 RPC | one retained intent; no duplicate or cache | 5 bounded attempts | 0 | `RESPONSE_DRAFT`, revision 3 | 1 | PASS |

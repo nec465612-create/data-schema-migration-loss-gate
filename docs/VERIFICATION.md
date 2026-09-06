@@ -106,9 +106,9 @@ From `E:\Genlayer-Projects\data-schema-migration-loss-gate`:
 - `gltest -q tests`: PASS; 20 contract tests.
 - `genvm-lint check contracts/main.py --json`: PASS.
 - `genvm-lint typecheck contracts/main.py`: PASS.
-- `npm --prefix frontend run test`: PASS; 10 files / 47 tests.
+- `npm --prefix frontend run test`: PASS; 11 files / 49 tests.
 - `npm --prefix frontend run build`: PASS; non-blocking Vite chunk-size warning.
-- `npm --prefix frontend run playwright`: PASS; 3 tests.
+- `npm --prefix frontend run playwright`: PASS; 4 tests.
 - `git diff --check`: PASS.
 
 ## Final release gate
