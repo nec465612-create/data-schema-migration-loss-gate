@@ -1,8 +1,8 @@
 # RPC Budget Matrix
 
-`DOCUMENT_STATUS: PRE_DEPLOY_PLANNED_NOT_LIVE_MEASURED`
+`DOCUMENT_STATUS: POST_DEPLOY_REVIEW_PACKAGE`
 
-This matrix is bound to the C3 Stage 2 frontend flow. It is a budget and test plan, not evidence of Studio traffic. The selected Studio account is recorded below; no Studio transaction has been sent.
+This matrix is bound to the C3 Stage 2 frontend flow. The frontend section remains a plan until the exact final Vercel deployment is measured. Studio live evidence is recorded separately in `docs/VERIFICATION.md` and the local secret-free action ledger.
 
 ## Applicability
 
@@ -58,13 +58,14 @@ STUDIO_CAPABILITY_TOOL_OR_API: In-App Browser capabilities, tab.playwright.evalu
 STUDIO_CAPABILITY_CHECK: inspected browser/tab capability lists, the page performance-resource API, and developer-log request visibility on https://studio.genlayer.com/contracts
 STUDIO_CAPABILITY_RESULT: physical request-level telemetry is not exposed; primary-AI Studio actions and visible tab state are observable
 STUDIO_PHYSICAL_COUNT_CLAIM: NONE
-STUDIO_ACTION_LEDGER_STATUS: LOCKED_FOR_PRE_E2E
+STUDIO_ACTION_LEDGER_STATUS: COMPLETE
 STUDIO_ACCOUNT: 0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902
 STUDIO_INTENDED_ROLE: deployer; upgrader NOT APPLICABLE for INTENTIONALLY FROZEN contract
-STUDIO_E2E_STATUS: NOT_STARTED
+STUDIO_E2E_STATUS: COMPLETE
+STUDIO_LIVE_EVIDENCE: docs/VERIFICATION.md
 ```
 
-The probe used only read-only page inspection. `browser.capabilities.list()` exposed visibility/viewport, `tab.capabilities.list()` exposed page-assets/WebMCP, the page evaluation exposed no performance resource API in the browser sandbox, and `tab.dev.logs()` exposed console logs but no request-event stream. Therefore this package locks `OBSERVABLE_ACTION_LEDGER` and makes no physical-network-count claim. The future ledger must record every primary-AI Studio action, status-poll attempt, terminal receipt read, authoritative readback, retry, transaction hash, duplicate-transaction count, and matrix variance.
+The probe used only read-only page inspection. `browser.capabilities.list()` exposed visibility/viewport, `tab.capabilities.list()` exposed page-assets/WebMCP, the page evaluation exposed no performance resource API in the browser sandbox, and `tab.dev.logs()` exposed console logs but no request-event stream. Therefore this package locks `OBSERVABLE_ACTION_LEDGER` and makes no physical-network-count claim. The completed primary-AI Studio action ledger, terminal receipts, authoritative readbacks, retries, transaction hashes, duplicate-transaction count and matrix disposition are recorded in `docs/VERIFICATION.md` and the local preflight evidence.
 
 ## STUDIO RPC BUDGET MATRIX
 
@@ -90,7 +91,7 @@ The following is the locked pre-E2E ceiling for the `OBSERVABLE_ACTION_LEDGER` m
 
 Terminal success requires `FINALIZED`, semantic execution success, consensus/finality where applicable, and the exact authoritative readback. `DROPPED`, rejected/failed execution, undetermined status, exhausted poll budget, transport-error exhaustion, or readback mismatch stops the row and preserves the hash/evidence; it never authorizes a replacement write. A `429` or transient transport error consumes the current bounded poll slot and uses `Retry-After` when exposed or bounded exponential backoff with jitter; it does not add poll slots. The create row's second read is required because the ID must be resolved by nonce and then verified historically.
 
-No Studio row is claimed as executed yet. The future ledger must record each listed action, poll attempt, terminal receipt, authoritative read, transaction hash, duplicate-transaction count, retry, and matrix variance without converting these ceilings into a physical-request count.
+Studio rows are executed and reconciled in `docs/VERIFICATION.md`; the ceilings above remain observable-action ceilings and are not converted into a physical-request count.
 
 ## F-012 sequencing disposition
 
@@ -100,13 +101,13 @@ The required pre-opening order was breached and is recorded rather than treated 
 STUDIO_MATRIX_CONTENT: COMPLETE
 STUDIO_MATRIX_LOCK_TIMING: AFTER_READ_ONLY_PROBE
 STUDIO_SEQUENCE_BREACH: RECORDED
-STUDIO_E2E_AUTHORIZATION: BLOCKED_PENDING_REVIEWER_DISPOSITION
-STUDIO_FURTHER_ACTION: NONE
+STUDIO_E2E_AUTHORIZATION: APPROVED_BY_PRE_DEPLOY_REVIEW
+STUDIO_FURTHER_ACTION: POST_DEPLOY_TEST_REVIEW
 STUDIO_REPLAY_OR_REDEPLOY_FOR_MEASUREMENT: FORBIDDEN
 ```
 
-Disposition: retain the account/probe as read-only setup evidence, make no retrospective compliance claim, do not replay or redeploy to repair the chronology, and keep PRE_DEPLOY and every further Studio action blocked until the retained anonymous reviewer confirms this disposition/evidence-plan adjustment.
+Disposition: retain the account/probe as read-only setup evidence, make no retrospective compliance claim, and do not replay or redeploy to repair the chronology. The retained PRE_DEPLOY reviewer confirmed this disposition; Studio E2E is complete and the next gate is `POST_DEPLOY_TEST`.
 
 ## Acceptance boundary
 
-Before PRE_DEPLOY can be approved, this matrix must be reviewed against the exact source revision, a Studio account must be locked, and the current anonymous reviewer must return the mandated literal verdict. Local tests do not satisfy those live/account/reviewer requirements.
+Before GitHub preparation can begin, the exact current revision, completed Studio evidence, this matrix and `docs/VERCEL-E2E-PLAN.md` must be reviewed in the retained anonymous `POST_DEPLOY_TEST` checkpoint. Local tests do not satisfy the later live frontend/account/reviewer requirements.
