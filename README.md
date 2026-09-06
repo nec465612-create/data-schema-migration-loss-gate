@@ -10,9 +10,9 @@ The gate assesses only the declared schemas and mapping. It does not migrate dat
 
 - [Studionet contract](https://explorer-studio.genlayer.com/address/0xB6D90F9dCbf14A2C638bA62de9ec43e738FCf69d)
 - [Deployment transaction](https://explorer-studio.genlayer.com/tx/0x93825fc61758708299cd0f7b8ff94728aabbbb94453f4387296ebf4facd47d3d)
+- [Live Vercel app](https://data-schema-migration-loss-gate.vercel.app)
+- [Vercel deployment](https://data-schema-migration-loss-gate-jpji8ofg3-nec10.vercel.app)
 - [Verification evidence](docs/VERIFICATION.md)
-
-A public live app URL will be added only after deployment and live verification.
 
 ## The trust problem
 
@@ -40,6 +40,8 @@ The stored outcome changes only after consensus. A frontend success state additi
 6. The contract applies deterministic loss rules, obtains validator consensus for semantic equivalence, stores the outcome and preserves the exact historical revision.
 
 The browser journal retains submitted transaction context across reloads. A pending or uncertain write must be reconciled by its original hash or authoritative state; it is never automatically resubmitted.
+
+The public app also provides a guarded recovery path for a known submitted hash. Recovery is accepted only after finality, caller/method, canonical arguments hash and authoritative historical readback agree.
 
 ## Actors and contract lifecycle
 
@@ -112,7 +114,7 @@ npm --prefix frontend run build
 npm --prefix frontend run playwright
 ```
 
-Current verified results are 20 contract tests, 21 frontend tests and 3 Playwright tests passing; contract lint/typecheck and the production frontend build pass. The build emits the documented non-blocking Vite chunk-size warning. Exact Studionet transactions, source hashes and readbacks are recorded in [docs/VERIFICATION.md](docs/VERIFICATION.md).
+Current verified results are 20 contract tests, 40 frontend tests and 3 Playwright tests passing; contract lint/typecheck and the production frontend build pass. The build emits the documented non-blocking Vite chunk-size warning. Exact Studionet transactions, source hashes, readbacks and live Vercel E2E evidence are recorded in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 ## Deployment and source parity
 
@@ -121,6 +123,8 @@ Current verified results are 20 contract tests, 21 frontend tests and 3 Playwrig
 - Deployment transaction: `0x93825fc61758708299cd0f7b8ff94728aabbbb94453f4387296ebf4facd47d3d`.
 - Contract source SHA-256: `48E2F8D15720DAABCCA4B1D4F2DA9E336AE31A3A5D07B297201AE2B09291B53A`.
 - Contract schema SHA-256: `16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF`.
+- Live app: `https://data-schema-migration-loss-gate.vercel.app`.
+- Vercel release: `dpl_8EQb4gmFdF9mNLvbDuQS12wxUiBa`, built from `4c91ce1cea8388287ece7dc19c9af602bd5752fe`.
 
 The deployed contract is intentionally frozen. Recovery relies on preserved source/schema parity, nonce-based create reconciliation, exact revision history and deployment of a separately reviewed successor if a future change is required.
 
@@ -139,5 +143,4 @@ The deployed contract is intentionally frozen. Recovery relies on preserved sour
 - The result covers only the declared record schema and mapping; it does not execute a migration or inspect real datasets.
 - Semantic equivalence can remain `UNRESOLVED`; retries are cooldown- and count-bounded.
 - The live Studio matrix did not synthetically force an `UNRESOLVED` case; that boundary is covered by automated tests.
-- Frontend RPC counts remain planned ceilings until measured on the exact public deployment.
-- No public live frontend URL is claimed yet.
+- Request-level physical RPC telemetry was not exposed by the browser control surface during the live run; the source-bound matrix and bounded ceilings remain documented without inventing counts.

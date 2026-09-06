@@ -9,3 +9,5 @@ frontend/tsconfig.tsbuildinfo
 frontend/.env
 frontend/.env.*
 !frontend/.env.example
+
+.vercel/
