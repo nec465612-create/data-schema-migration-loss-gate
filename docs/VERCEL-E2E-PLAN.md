@@ -2,7 +2,9 @@
 
 `DOCUMENT_STATUS: POST_DEPLOY_PLAN_NOT_EXECUTED`
 
-This is the minimum-sufficient judge-perspective plan for the exact Build revision `5e531a6ea539a941fe3cbaba65c059693e6700b3`. It is submitted for the `POST_DEPLOY_TEST` checkpoint; it is not permission to open Chrome, push GitHub, deploy Vercel, or request a wallet signature. Explicit user start permission is required immediately before the later release/test preparation.
+`POST_DEPLOY_PACKAGE: DSM-LG-POSTDEPLOY-FD956A4`
+
+This is the minimum-sufficient judge-perspective plan for the exact Build revision `fd956a413bff1be16f5773267ec047243864f2d5`. It is submitted for the `POST_DEPLOY_TEST` checkpoint; it is not permission to open Chrome, push GitHub, deploy Vercel, or request a wallet signature. Explicit user start permission is required immediately before the later release/test preparation.
 
 ## Release identity and actor boundary
 
