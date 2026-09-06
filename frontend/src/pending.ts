@@ -230,6 +230,21 @@ export async function removeUnsignedJournal(reservation: string): Promise<void> 
   });
 }
 
+export async function attachKnownTransactionHash(reservation: string, txHash: string): Promise<JournalRecord> {
+  if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) throw new Error("BAD_TRANSACTION_HASH");
+  return withJournalLock(async () => {
+    const store = storage();
+    const key = journalKey(reservation);
+    const raw = store.getItem(key);
+    if (raw === null) throw new Error("JOURNAL_NOT_FOUND");
+    const current = parseStoredRecord(key, raw);
+    if (current.status !== "SIGNING" || current.tx_hash !== "") throw new Error("HASH_ATTACHMENT_NOT_ALLOWED");
+    const next = validateJournalRecord({ ...current, tx_hash: txHash.toLowerCase(), status: "RECONCILE" });
+    store.setItem(key, JSON.stringify(next));
+    return next;
+  });
+}
+
 export async function rebuildJournalIndex(): Promise<JournalRecord[]> {
   return withJournalLock(async () => {
     const store = storage();

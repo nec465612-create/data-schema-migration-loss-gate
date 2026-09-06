@@ -5,6 +5,7 @@ import {
   JOURNAL_INDEX,
   journalKey,
   archiveJournalRecord,
+  attachKnownTransactionHash,
   rebuildJournalIndex,
   reserveJournal,
   sha256Utf8,
@@ -53,6 +54,17 @@ describe("crash-recoverable journal", () => {
 
     expect(record.contract).toBe("0x11111111111111111111111111111111111111aa");
     expect(enumerateJournal()[0].contract).toBe("0x11111111111111111111111111111111111111aa");
+  });
+
+  it("attaches one known submitted hash to a signing reservation", async () => {
+    const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
+    const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
+    const hash = `0x${"c".repeat(64)}`;
+
+    const recovered = await attachKnownTransactionHash(record.reservation, hash);
+
+    expect(recovered).toMatchObject({ status: "RECONCILE", tx_hash: hash });
+    await expect(attachKnownTransactionHash(record.reservation, `0x${"d".repeat(64)}`)).rejects.toThrow("HASH_ATTACHMENT_NOT_ALLOWED");
   });
 
   it("uses a random reservation key and blocks the same pending intent", async () => {

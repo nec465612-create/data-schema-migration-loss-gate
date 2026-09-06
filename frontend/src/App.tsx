@@ -19,7 +19,7 @@ import {
   WriteRequest,
   writeAndVerify,
 } from "./contract";
-import { archiveJournalRecord, JournalRecord, rebuildJournalIndex, serializeJournalRecord } from "./pending";
+import { archiveJournalRecord, attachKnownTransactionHash, JournalRecord, rebuildJournalIndex, serializeJournalRecord } from "./pending";
 import { isPendingPhase, PROGRESS_COPY, WriteProgress } from "./progress";
 import {
   defaultMappingRow,
@@ -204,6 +204,7 @@ function App() {
   const [journal, setJournal] = useState<JournalRecord[]>([]);
   const [journalReadbacks, setJournalReadbacks] = useState<Record<string, string>>({});
   const [journalExported, setJournalExported] = useState<Record<string, boolean>>({});
+  const [knownHashes, setKnownHashes] = useState<Record<string, string>>({});
   const [progress, setProgress] = useState<WriteProgress>({ phase: "IDLE" });
   const writeAbortRef = useRef<AbortController | null>(null);
   const walletTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -614,6 +615,20 @@ function App() {
                     <summary>Stored arguments</summary>
                     <pre className="record-view">{record.args_json}</pre>
                   </details>
+                  {record.status === "SIGNING" && !record.tx_hash && (
+                    <div className="toolbar journal-actions">
+                      <input
+                        aria-label={`Known transaction hash for ${record.method}`}
+                        value={knownHashes[record.reservation] ?? ""}
+                        onChange={(event) => setKnownHashes((current) => ({ ...current, [record.reservation]: event.target.value }))}
+                        placeholder="0x transaction hash"
+                      />
+                      <button type="button" className="quiet-button" onClick={() => void attachKnownTransactionHash(record.reservation, knownHashes[record.reservation] ?? "").then((next) => {
+                        setJournal((current) => current.map((item) => item.reservation === next.reservation ? next : item));
+                        setMessage("Known submitted hash attached. Reconcile this record before any retry.");
+                      }).catch((caught) => setError(String(caught)))}>Attach known hash</button>
+                    </div>
+                  )}
                   {journalReadbacks[record.reservation] && (
                     <details open>
                       <summary>Authoritative readback</summary>
