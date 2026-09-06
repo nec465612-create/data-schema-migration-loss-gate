@@ -49,7 +49,7 @@ describe("crash-recoverable journal", () => {
 
   it("accepts checksum addresses and normalizes journal identity", async () => {
     const input = { ...baseInput, contract: "0x11111111111111111111111111111111111111AA" };
-    const fingerprint = await sha256Utf8(JSON.stringify([input.chain, input.contract, input.account, input.method, input.intent]));
+    const fingerprint = await sha256Utf8(JSON.stringify([input.chain, input.contract.toLowerCase(), input.account.toLowerCase(), input.method, input.intent]));
 
     const record = await reserveJournal({ ...input, operationFingerprint: fingerprint });
 
@@ -66,6 +66,17 @@ describe("crash-recoverable journal", () => {
 
     expect(recovered).toMatchObject({ status: "RECONCILE", tx_hash: hash });
     await expect(attachKnownTransactionHash(record.reservation, `0x${"d".repeat(64)}`)).rejects.toThrow("HASH_ATTACHMENT_NOT_ALLOWED");
+  });
+
+  it("rejects attaching a hash retained by another signing reservation", async () => {
+    const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
+    const first = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
+    const secondInput = { ...baseInput, intent: "lock_schemas:2:1", args_json: '["2","1"]' };
+    const secondFingerprint = await sha256Utf8(JSON.stringify([secondInput.chain, secondInput.contract, secondInput.account, secondInput.method, secondInput.intent]));
+    const second = await reserveJournal({ ...secondInput, operationFingerprint: secondFingerprint });
+    const hash = `0x${"a".repeat(64)}`;
+    await attachKnownTransactionHash(first.reservation, hash);
+    await expect(attachKnownTransactionHash(second.reservation, hash)).rejects.toThrow("TRANSACTION_ALREADY_RETAINED");
   });
 
   it("recovers a submitted record only with a hash and refuses duplicate hashes", async () => {
@@ -89,6 +100,20 @@ describe("crash-recoverable journal", () => {
     expect(enumerateJournal()[0].tx_hash).toBe(txHash);
     await expect(updateJournal(record.reservation, { tx_hash: `0x${"c".repeat(64)}` })).rejects.toThrow("IMMUTABLE_TX_HASH");
     await expect(reserveJournal({ ...baseInput, method: "put_mapping", intent: "put_mapping:1:2", operationFingerprint: await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, "put_mapping", "put_mapping:1:2"])) })).rejects.toThrow("PENDING_OPERATION_EXISTS");
+  });
+
+  it("canonicalizes mixed-case identities before duplicate detection", async () => {
+    const input = {
+      ...baseInput,
+      contract: "0x11111111111111111111111111111111111111AA",
+      account: "0x22222222222222222222222222222222222222BB",
+    };
+    const fingerprint = await sha256Utf8(JSON.stringify([input.chain, input.contract.toLowerCase(), input.account.toLowerCase(), input.method, input.intent]));
+    const record = await reserveJournal({ ...input, operationFingerprint: fingerprint });
+    await expect(reserveJournal({ ...input, operationFingerprint: fingerprint })).rejects.toThrow("PENDING_OPERATION_EXISTS");
+    const hash = `0x${"9".repeat(64)}`;
+    await updateJournal(record.reservation, { status: "SUBMITTED", tx_hash: hash });
+    await expect(recoverJournalRecord({ ...input, tx_hash: hash, status: "RECONCILE" })).rejects.toThrow("TRANSACTION_ALREADY_RETAINED");
   });
 
   it("rejects a caller-supplied fingerprint that does not match its journal context", async () => {

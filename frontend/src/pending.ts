@@ -155,14 +155,20 @@ export async function reserveJournal(input: JournalReservation): Promise<Journal
   return withJournalLock(async () => {
     const store = storage();
     const records = enumerateJournal();
+    const normalizedInput = {
+      ...input,
+      contract: input.contract.toLowerCase(),
+      account: input.account.toLowerCase(),
+      tx_hash: input.tx_hash.toLowerCase(),
+    };
     const expectedFingerprint = await sha256Utf8(JSON.stringify([
-      input.chain,
-      input.contract,
-      input.account,
-      input.method,
-      input.intent,
+      normalizedInput.chain,
+      normalizedInput.contract,
+      normalizedInput.account,
+      normalizedInput.method,
+      normalizedInput.intent,
     ]));
-    if (input.operationFingerprint !== expectedFingerprint) throw new Error("OPERATION_FINGERPRINT_MISMATCH");
+    if (normalizedInput.operationFingerprint !== expectedFingerprint) throw new Error("OPERATION_FINGERPRINT_MISMATCH");
     const active = records.filter((record) =>
       ["SIGNING", "SUBMITTED", "RECONCILE"].includes(record.status),
     );
@@ -177,20 +183,20 @@ export async function reserveJournal(input: JournalReservation): Promise<Journal
         ])),
       ),
     );
-    if (input.tx_hash && records.some((record) => record.tx_hash.toLowerCase() === input.tx_hash.toLowerCase())) {
+    if (normalizedInput.tx_hash && records.some((record) => record.tx_hash === normalizedInput.tx_hash)) {
       throw new Error("TRANSACTION_ALREADY_RETAINED");
     }
-    const inputCaseId = input.intent.startsWith("create:") ? null : input.intent.split(":")[1] ?? null;
+    const inputCaseId = normalizedInput.intent.startsWith("create:") ? null : normalizedInput.intent.split(":")[1] ?? null;
     const hasSameCase = inputCaseId !== null && active.some((record) => {
-      if (record.chain !== input.chain || record.contract !== input.contract) return false;
+      if (record.chain !== normalizedInput.chain || record.contract !== normalizedInput.contract) return false;
       return !record.intent.startsWith("create:") && record.intent.split(":")[1] === inputCaseId;
     });
-    if (existingFingerprints.includes(input.operationFingerprint) || hasSameCase) {
+    if (existingFingerprints.includes(normalizedInput.operationFingerprint) || hasSameCase) {
       throw new Error("PENDING_OPERATION_EXISTS");
     }
     if (records.length >= 32) throw new Error("JOURNAL_CAPACITY");
     const now = Date.now();
-    const { operationFingerprint: _operationFingerprint, ...recordInput } = input;
+    const { operationFingerprint: _operationFingerprint, ...recordInput } = normalizedInput;
     const record = validateJournalRecord({
       ...recordInput,
       v: 1,
@@ -207,8 +213,8 @@ export async function recoverJournalRecord(input: JournalRecoveryInput): Promise
   if (input.status !== "RECONCILE" || !input.tx_hash) throw new Error("RECOVERY_REQUIRES_SUBMITTED_HASH");
   const operationFingerprint = await sha256Utf8(JSON.stringify([
     input.chain,
-    input.contract,
-    input.account,
+    input.contract.toLowerCase(),
+    input.account.toLowerCase(),
     input.method,
     input.intent,
   ]));
@@ -251,12 +257,16 @@ export async function attachKnownTransactionHash(reservation: string, txHash: st
   if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) throw new Error("BAD_TRANSACTION_HASH");
   return withJournalLock(async () => {
     const store = storage();
+    const normalizedHash = txHash.toLowerCase();
     const key = journalKey(reservation);
     const raw = store.getItem(key);
     if (raw === null) throw new Error("JOURNAL_NOT_FOUND");
     const current = parseStoredRecord(key, raw);
     if (current.status !== "SIGNING" || current.tx_hash !== "") throw new Error("HASH_ATTACHMENT_NOT_ALLOWED");
-    const next = validateJournalRecord({ ...current, tx_hash: txHash.toLowerCase(), status: "RECONCILE" });
+    if (enumerateJournal().some((record) => record.reservation !== reservation && record.tx_hash === normalizedHash)) {
+      throw new Error("TRANSACTION_ALREADY_RETAINED");
+    }
+    const next = validateJournalRecord({ ...current, tx_hash: normalizedHash, status: "RECONCILE" });
     store.setItem(key, JSON.stringify(next));
     return next;
   });

@@ -70,9 +70,11 @@ describe("journal recovery reconciliation", () => {
   it("reconciles a retained transaction against finalized status and historical readback", async () => {
     const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
     const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
+    const argsHash = await sha256Utf8(contract.canonicalJson(["1", "0"]));
     const readback = JSON.stringify({
       revision: "1",
-      last_operation: { method: "lock_schemas", caller: account },
+      phase: "BASE_LOCKED",
+      last_operation: { method: "lock_schemas", caller: account, args_hash: argsHash },
     });
     mocks.getTransaction.mockResolvedValue({ statusName: "FINALIZED", txExecutionResultName: "FINISHED_WITH_RETURN" });
     mocks.readContract.mockResolvedValue(readback);
@@ -112,7 +114,8 @@ describe("journal recovery reconciliation", () => {
   it("accepts a successful Studio leader receipt", async () => {
     const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
     const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
-    const readback = JSON.stringify({ revision: "1", last_operation: { method: "lock_schemas", caller: account } });
+    const argsHash = await sha256Utf8(contract.canonicalJson(["1", "0"]));
+    const readback = JSON.stringify({ revision: "1", phase: "BASE_LOCKED", last_operation: { method: "lock_schemas", caller: account, args_hash: argsHash } });
     mocks.getTransaction.mockResolvedValue({
       statusName: "FINALIZED",
       consensus_data: { leader_receipt: [{ execution_result: "SUCCESS", vote: null }] },
@@ -142,16 +145,19 @@ describe("journal recovery reconciliation", () => {
   it("reconciles a create record using its stored account when intent text is stale", async () => {
     const creator = "0xc3a438eba22c439cbce393f3f8c79bfcac8b27c6";
     const nonce = "fb76cb4395c3c583f9b34e2119ce4715";
+    const base = { old: [{ id: "name", type: "TEXT", required: true, meaning: "same declared meaning", values: [] }], new: [{ id: "name", type: "TEXT", required: true, meaning: "same declared meaning", values: [] }] };
+    const mapper = "0xe8d6c55838c39301c11d54fc9a38b9de298329f6";
     const input = {
       ...baseInput,
       account: creator,
       method: "create_schema_case",
       intent: `create:${account}:${nonce}`,
-      args_json: JSON.stringify([nonce, "0xe8d6c55838c39301c11d54fc9a38b9de298329f6", "{}", "0"]),
+      args_json: JSON.stringify([nonce, mapper, JSON.stringify(base), "0"]),
     };
     const fingerprint = await sha256Utf8(JSON.stringify([input.chain, input.contract, input.account, input.method, input.intent]));
     const record = await reserveJournal({ ...input, operationFingerprint: fingerprint });
-    const readback = JSON.stringify({ revision: "1", last_operation: { method: "create_schema_case", caller: creator } });
+    const argsHash = await sha256Utf8(contract.canonicalJson([nonce, mapper, base, "0"]));
+    const readback = JSON.stringify({ revision: "1", phase: "BASE_DRAFT", base, last_operation: { method: "create_schema_case", caller: creator, args_hash: argsHash } });
     mocks.getTransaction.mockResolvedValue({ statusName: "FINALIZED", txExecutionResultName: "FINISHED_WITH_RETURN" });
     mocks.readContract.mockResolvedValueOnce("4").mockResolvedValueOnce(readback);
 
@@ -159,6 +165,19 @@ describe("journal recovery reconciliation", () => {
 
     expect(result.record.status).toBe("VERIFIED");
     expect(result.readback).toBe(readback);
+  });
+
+  it("retains reconciliation when finalized readback args_hash is different", async () => {
+    const fingerprint = await sha256Utf8(JSON.stringify([baseInput.chain, baseInput.contract, baseInput.account, baseInput.method, baseInput.intent]));
+    const record = await reserveJournal({ ...baseInput, operationFingerprint: fingerprint });
+    const readback = JSON.stringify({ revision: "1", phase: "BASE_LOCKED", last_operation: { method: "lock_schemas", caller: account, args_hash: "0".repeat(64) } });
+    mocks.getTransaction.mockResolvedValue({ statusName: "FINALIZED", txExecutionResultName: "FINISHED_WITH_RETURN" });
+    mocks.readContract.mockResolvedValue(readback);
+
+    const result = await contract.reconcileJournalRecord(record);
+
+    expect(result.record.status).toBe("RECONCILE");
+    expect(result.detail).toContain("does not match");
   });
 
   it("retains reconciliation when finality is not available", async () => {

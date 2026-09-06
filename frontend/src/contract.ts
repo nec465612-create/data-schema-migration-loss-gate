@@ -420,6 +420,66 @@ function journalReadbackContext(record: JournalRecord): { caseId: string; revisi
   }
 }
 
+type JournalVerification = {
+  argsForHash: unknown[];
+  verify: (record: Record<string, any>, revision: string) => boolean;
+};
+
+function parseJsonObject(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== "string") return null;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function journalVerification(record: JournalRecord): JournalVerification | null {
+  try {
+    const args = JSON.parse(record.args_json) as unknown;
+    if (!Array.isArray(args)) return null;
+    if (record.method === "create_schema_case") {
+      if (args.length !== 4 || typeof args[0] !== "string" || typeof args[1] !== "string" || typeof args[2] !== "string" || typeof args[3] !== "string") return null;
+      const mapper = validAccount(args[1]);
+      const base = parseJsonObject(args[2]);
+      if (!mapper || !base || !decimalPattern.test(args[3])) return null;
+      return {
+        argsForHash: [args[0], mapper, base, args[3]],
+        verify: (readback, revision) => readback.revision === revision && readback.phase === "BASE_DRAFT" && readback.base?.old && readback.base?.new,
+      };
+    }
+    if (record.method === "replace_schemas" || record.method === "put_mapping") {
+      if (args.length !== 3 || typeof args[0] !== "string" || typeof args[1] !== "string" || typeof args[2] !== "string" || !decimalPattern.test(args[0]) || !decimalPattern.test(args[2])) return null;
+      const payload = parseJsonObject(args[1]);
+      if (!payload) return null;
+      return {
+        argsForHash: [args[0], payload, args[2]],
+        verify: (readback, revision) => record.method === "replace_schemas"
+          ? readback.revision === revision && readback.phase === "BASE_DRAFT" && readback.base?.old && readback.base?.new
+          : readback.revision === revision && readback.phase === "RESPONSE_DRAFT" && Array.isArray(readback.response?.mapping),
+      };
+    }
+    if (["lock_schemas", "freeze_mapping", "evaluate_migration"].includes(record.method)) {
+      if (args.length !== 2 || typeof args[0] !== "string" || typeof args[1] !== "string" || !decimalPattern.test(args[0]) || !decimalPattern.test(args[1])) return null;
+      return {
+        argsForHash: [args[0], args[1]],
+        verify: (readback, revision) => {
+          if (readback.revision !== revision) return false;
+          if (record.method === "lock_schemas") return readback.phase === "BASE_LOCKED";
+          if (record.method === "freeze_mapping") return readback.phase === "FROZEN";
+          return readback.phase === "DONE" || readback.phase === "UNRESOLVED";
+        },
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function reconcileJournalRecord(record: JournalRecord): Promise<JournalReconciliation> {
   if (record.chain !== String(chains[config.chainName].id) || record.contract.toLowerCase() !== (config.contractAddress ?? "").toLowerCase()) {
     const quarantined = await updateJournal(record.reservation, { status: "QUARANTINED" });
@@ -456,11 +516,24 @@ export async function reconcileJournalRecord(record: JournalRecord): Promise<Jou
       return { record: updated, readback: null, detail: "The create transaction is finalized, but its case ID is not readable yet." };
     }
   }
+  const verification = journalVerification(record);
+  if (!verification) {
+    const updated = await updateJournal(record.reservation, { status: "RECONCILE" });
+    return { record: updated, readback: null, detail: "Stored arguments do not provide a safe canonical verification context." };
+  }
+  const argsHash = await sha256Utf8(canonicalJson(verification.argsForHash));
   const encoded = await readView("get_version", [BigInt(caseId), BigInt(context.revision)]);
   let parsed: Record<string, any> | null = null;
-  try { parsed = encoded === "null" ? null : JSON.parse(encoded) as Record<string, any>; } catch { parsed = null; }
+  try { parsed = encoded === "null" ? null : parseCaseRecord(encoded); } catch { parsed = null; }
   const operation = parsed?.last_operation as Record<string, unknown> | undefined;
-  if (parsed?.revision !== context.revision || operation?.method !== record.method || operation.caller !== record.account) {
+  if (
+    !parsed ||
+    parsed.revision !== context.revision ||
+    operation?.method !== record.method ||
+    String(operation?.caller ?? "").toLowerCase() !== record.account ||
+    operation?.args_hash !== argsHash ||
+    !verification.verify(parsed, context.revision)
+  ) {
     const updated = await updateJournal(record.reservation, { status: "RECONCILE" });
     return { record: updated, readback: encoded, detail: "Finality is confirmed, but stored context does not match the authoritative historical readback." };
   }
@@ -668,8 +741,8 @@ export async function writeAndVerify(
   if (!contextIsCurrent()) throw new Error("WALLET_SESSION_CHANGED");
   const operationFingerprint = await sha256Utf8(JSON.stringify([
     String(chains[config.chainName].id),
-    contract,
-    operationSession.account,
+    contract.toLowerCase(),
+    operationSession.account.toLowerCase(),
     request.method,
     request.intent,
   ]));
