@@ -1,10 +1,10 @@
 # Verification
 
-`DOCUMENT_STATUS: POST_DEPLOY_CORRECTION_PACKAGE_PREP`
+`DOCUMENT_STATUS: POST_DEPLOY_CORRECTION_DEPLOYED_E2E_BLOCKED_ACCESS`
 
 `POST_DEPLOY_PACKAGE: DSM-LG-POSTDEPLOY-8BB5EE8`
 
-This document binds the live Studionet evidence and the exact public build revision before any GitHub push. It is not a GitHub, Vercel, final-release, or Explorer approval.
+This document binds the live Studionet evidence and corrected public build deployment. The corrected Vercel E2E is not complete because the locked Chrome tab was unavailable. It is not a final-release or Explorer approval.
 
 ## Identity
 
@@ -16,7 +16,8 @@ This document binds the live Studionet evidence and the exact public build revis
 - Contract schema SHA-256: `16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF`
 - Network: Studionet, chain ID `61999`
 - Contract: `0xB6D90F9dCbf14A2C638bA62de9ec43e738FCf69d`
-- Judge-visible Vercel alias: `https://data-schema-migration-loss-gate.vercel.app` (HTTP `200`, title `Schema migration loss gate` on the prior production smoke check).
+- Judge-visible Vercel alias: `https://data-schema-migration-loss-gate.vercel.app` (corrected deployment smoke check HTTP `200`; deployed asset contains the journal-verification correction marker).
+- Corrected Vercel deployment: `dpl_DQ6sreuRBDv4CfaTo6q3nUhZrcg4`, target `production`, immutable URL `https://data-schema-migration-loss-gate-5hwr0b56k-nec10.vercel.app`, aliases `data-schema-migration-loss-gate.vercel.app` and `data-schema-migration-loss-gate-nec10.vercel.app`, built from the corrected frontend tree at `8bb5ee8`.
 - Prior Vercel deployment metadata: `dpl_FrgkZoLbF3d86R7qLraSCvXvZbPc` target `production`, aliases `data-schema-migration-loss-gate.vercel.app` and `data-schema-migration-loss-gate-nec10.vercel.app`, built from superseded frontend release `4c91ce1`; retained as historical evidence and not claimed as this package's corrected release.
 - Immutable deployment URL: `https://data-schema-migration-loss-gate-4uchp2xxw-nec10.vercel.app` is SSO-protected (HTTP `302` to `/sso-api`), so it is metadata-only and no public HTTP-200 application claim is made for it.
 - Deployment transaction: `0x93825fc61758708299cd0f7b8ff94728aabbbb94453f4387296ebf4facd47d3d`
@@ -24,11 +25,11 @@ This document binds the live Studionet evidence and the exact public build revis
 - Studio mapper/secondary: `0x34b92E6553eaCA11A00A9d86d75d8a7881779D78`
 - Studio evidence mode: `OBSERVABLE_ACTION_LEDGER`; no physical network request count is claimed.
 
-The retained Studio packages and deployed-source commits are historical provenance. The contract address and contract source hash remain unchanged. The previous Vercel journey is superseded by the journal-integrity correction in `8bb5ee8`; a corrected-release deployment and affected E2E rerun are required before this package can claim current Vercel PASS.
+The retained Studio packages and deployed-source commits are historical provenance. The contract address and contract source hash remain unchanged. The previous Vercel journey is superseded by the journal-integrity correction in `8bb5ee8`. The corrected deployment is READY; the affected E2E rerun remains blocked by loss of the locked Chrome tab and therefore this package makes no current Vercel PASS claim.
 
 ## Live Vercel E2E proof
 
-The prior primary-AI-controlled Case 4 journey is retained in [docs/preflight/vercel-e2e-completion.md](preflight/vercel-e2e-completion.md) as superseded evidence for frontend release `4c91ce1`. It used the separate external OKX account `0xe8d6c55838c39301c11d54fc9a38b9de298329f6`, not the Studio deployer, and reached `DONE`, `LOSSLESS`, revision `5`. Because the current release corrects journal verification, the affected Vercel journey must be rerun on the corrected release; the old actor record is not reused as F-020 closure.
+The prior primary-AI-controlled Case 4 journey is retained in [docs/preflight/vercel-e2e-completion.md](preflight/vercel-e2e-completion.md) as superseded evidence for frontend release `4c91ce1`. It used the separate external OKX account `0xe8d6c55838c39301c11d54fc9a38b9de298329f6`, not the Studio deployer, and reached `DONE`, `LOSSLESS`, revision `5`. The corrected deployment is recorded above, but its required J0-J7 rerun is currently `BLOCKED_ACCESS` because Chrome instance `2` no longer exposes the locked tab `1145402204`; no corrected-release E2E or F-020 closure is claimed.
 
 ## Live Studio proof matrix
 
@@ -67,5 +68,6 @@ From `E:\Genlayer-Projects\data-schema-migration-loss-gate`:
 - Frontend RPC plan/matrix: `docs/RPC-BUDGET.md`.
 - Exact Vercel plan: `docs/VERCEL-E2E-PLAN.md`.
 - Exact Vercel E2E plan: `docs/VERCEL-E2E-PLAN.md`, refreshed for package `DSM-LG-POSTDEPLOY-8BB5EE8` and frontend release `8bb5ee8986162156bf52a1afd3bc79dd7b678d63`.
-- Exact Vercel E2E evidence: the prior `4c91ce1` run is superseded by this frontend correction; `docs/preflight/vercel-e2e-completion.md` must be refreshed from the corrected release before GitHub preparation.
-- The GitHub and Vercel targets are locked in private release evidence; no GitHub push, Vercel deployment, wallet signature, final approval, or Explorer submission is claimed here.
+- Exact corrected deployment evidence: `docs/preflight/vercel-corrected-deployment.md` records `dpl_DQ6sreuRBDv4CfaTo6q3nUhZrcg4` and the alias smoke result.
+- Exact corrected Vercel E2E evidence: `docs/preflight/vercel-e2e-completion.md` remains a superseded-history record; the current rerun is blocked in `docs/preflight/vercel-e2e-blocked-tab.md` and must resume on the locked tab before claiming Vercel PASS.
+- GitHub target is public at the current documentation revision; Vercel deployment is READY. No wallet signature, final approval, or Explorer submission is claimed here.

@@ -11,7 +11,7 @@ The gate assesses only the declared schemas and mapping. It does not migrate dat
 - [Studionet contract](https://explorer-studio.genlayer.com/address/0xB6D90F9dCbf14A2C638bA62de9ec43e738FCf69d)
 - [Deployment transaction](https://explorer-studio.genlayer.com/tx/0x93825fc61758708299cd0f7b8ff94728aabbbb94453f4387296ebf4facd47d3d)
 - [Live Vercel app](https://data-schema-migration-loss-gate.vercel.app)
-- [Vercel deployment](https://data-schema-migration-loss-gate-4uchp2xxw-nec10.vercel.app)
+- [Live Vercel app](https://data-schema-migration-loss-gate.vercel.app)
 - [Verification evidence](docs/VERIFICATION.md)
 
 ## The trust problem
@@ -123,8 +123,8 @@ Current verified results are 20 contract tests, 43 frontend tests and 3 Playwrig
 - Deployment transaction: `0x93825fc61758708299cd0f7b8ff94728aabbbb94453f4387296ebf4facd47d3d`.
 - Contract source SHA-256: `48E2F8D15720DAABCCA4B1D4F2DA9E336AE31A3A5D07B297201AE2B09291B53A`.
 - Contract schema SHA-256: `16A15785BD1ACA7DA89A0C73ADE7CBC22539AB403EDD10F82300F02F7B080EBF`.
-- Judge-visible Vercel alias: `https://data-schema-migration-loss-gate.vercel.app` (prior production smoke target).
-- Prior Vercel deployment metadata: `dpl_FrgkZoLbF3d86R7qLraSCvXvZbPc`, built from superseded frontend release `4c91ce1`; the corrected frontend release is local commit `8bb5ee8986162156bf52a1afd3bc79dd7b678d63` pending its governed redeploy and E2E rerun.
+- Judge-visible Vercel alias: `https://data-schema-migration-loss-gate.vercel.app` (corrected production deployment, HTTP 200 smoke check).
+- Corrected Vercel deployment: `dpl_DQ6sreuRBDv4CfaTo6q3nUhZrcg4`, built from frontend correction release `8bb5ee8986162156bf52a1afd3bc79dd7b678d63`; the required corrected-release E2E rerun is recorded as access-blocked until the locked Chrome tab is restored.
 
 The deployed contract is intentionally frozen. Recovery relies on preserved source/schema parity, nonce-based create reconciliation, exact revision history and deployment of a separately reviewed successor if a future change is required.
 
