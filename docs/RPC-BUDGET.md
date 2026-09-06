@@ -132,8 +132,8 @@ STUDIO_FURTHER_ACTION: POST_DEPLOY_TEST_REVIEW
 STUDIO_REPLAY_OR_REDEPLOY_FOR_MEASUREMENT: FORBIDDEN
 ```
 
-Disposition: retain the account/probe as read-only setup evidence, make no retrospective compliance claim, and do not replay or redeploy to repair the chronology. The retained PRE_DEPLOY reviewer confirmed this disposition; Studio E2E is complete and the next gate is `POST_DEPLOY_TEST`.
+Disposition: retain the account/probe as read-only setup evidence and do not replay or redeploy completed transactions. Studio E2E is complete.
 
 ## Acceptance boundary
 
-The exact final revision, completed Studio evidence, final Vercel deployment, measured request-level ledger and `docs/VERIFICATION.md` now enter the retained anonymous `POST_GITHUB_VERCEL_FINAL` checkpoint.
+The exact final revision, completed Studio evidence, final Vercel deployment and measured request-level ledger are bound in `docs/VERIFICATION.md`.

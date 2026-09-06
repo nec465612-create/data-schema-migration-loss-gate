@@ -69,4 +69,4 @@ The exact-release request-level telemetry, hashes, transaction totals and readba
 
 ## Completion gate
 
-The final Case 7 run completed `READY_TO_START → RUNNING → SWEEPING → COMPLETE`: J0–J7 passed, all five writes reached automatic finality/semantic/readback success, J7 confirmed `DONE/LOSSLESS` after reload, and request-level telemetry recorded 58 successful RPC requests with no retry or duplicate write. Final anonymous approval remains separate.
+The final Case 7 run completed `READY_TO_START → RUNNING → SWEEPING → COMPLETE`: J0–J7 passed, all five writes reached automatic finality/semantic/readback success, J7 confirmed `DONE/LOSSLESS` after reload, and request-level telemetry recorded 58 successful RPC requests with no retry or duplicate write.

@@ -11,7 +11,6 @@ The gate assesses only the declared schemas and mapping. It does not migrate dat
 - [Studionet contract](https://explorer-studio.genlayer.com/address/0xB6D90F9dCbf14A2C638bA62de9ec43e738FCf69d)
 - [Deployment transaction](https://explorer-studio.genlayer.com/tx/0x93825fc61758708299cd0f7b8ff94728aabbbb94453f4387296ebf4facd47d3d)
 - [Live Vercel app](https://data-schema-migration-loss-gate.vercel.app)
-- [Live Vercel app](https://data-schema-migration-loss-gate.vercel.app)
 - [Verification evidence](docs/VERIFICATION.md)
 
 ## The trust problem
